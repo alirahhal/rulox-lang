@@ -91,6 +91,10 @@ mod tests {
         let mut i = 0;
         while i < 257 {
             chunk.write_constant(i as f64, 1);
+            assert_eq!(
+                opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
+                OpCode::OpConstant
+            );
             i = i + 1;
         }
 
