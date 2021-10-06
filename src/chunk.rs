@@ -1,11 +1,18 @@
 use crate::value::{Value, ValueArray};
 
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum OpCode {
     OpReturn,
     OpConstant,
     OpConstantLong,
+    Unknown,
+}
+
+impl Default for OpCode {
+    fn default() -> Self {
+        OpCode::Unknown
+    }
 }
 
 pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
@@ -33,7 +40,7 @@ impl Chunk {
     pub fn write_constant(&mut self, value: Value, line: i32) {
         let index = self.add_constant(value);
 
-        if index < 1 {
+        if index < 256 {
             self.write_chunk(OpCode::OpConstant as u8, line);
             self.write_chunk(index as u8, line);
         } else {
@@ -53,5 +60,43 @@ impl Chunk {
         self.code.clear();
         self.lines.clear();
         self.constants.free_value_array();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_write_constant() {
+        let mut chunk = Chunk {
+            ..Default::default()
+        };
+
+        chunk.write_constant(1 as f64, 1);
+
+        assert_eq!(
+            opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
+            OpCode::OpConstant
+        );
+    }
+
+    #[test]
+    fn test_write_long_constant() {
+        let mut chunk = Chunk {
+            ..Default::default()
+        };
+
+        let mut i = 0;
+        while i < 257 {
+            chunk.write_constant(i as f64, 1);
+            i = i + 1;
+        }
+
+        assert_eq!(
+            opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap(),
+            OpCode::OpConstantLong
+        );
     }
 }

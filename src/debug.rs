@@ -19,8 +19,8 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         print!("{:#4} ", chunk.lines[offset as usize]);
     }
 
-    let instruction = opcode_from_u8(chunk.code[offset as usize]).unwrap();
-    match instruction {
+    let instruction = chunk.code[offset as usize];
+    match opcode_from_u8(instruction).unwrap_or_default() {
         OpCode::OpReturn => return simple_instruction(String::from("OP_RETURN"), offset),
         OpCode::OpConstant => {
             return constant_instruction(String::from("OP_CONSTANT"), chunk, offset)
