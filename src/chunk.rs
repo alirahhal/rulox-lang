@@ -1,5 +1,5 @@
+use crate::common::OpCode;
 use crate::value::{Value, ValueArray};
-use crate::common::{opcode_from_u8, OpCode};
 
 #[derive(Default)]
 pub struct Chunk {
@@ -42,8 +42,8 @@ impl Chunk {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use crate::common::opcode_from_u8;
 
     #[test]
     fn test_write_constant() {
