@@ -1,28 +1,5 @@
 use crate::value::{Value, ValueArray};
-
-#[repr(u8)]
-#[derive(Debug, PartialEq)]
-pub enum OpCode {
-    OpReturn,
-    OpConstant,
-    OpConstantLong,
-    Unknown,
-}
-
-impl Default for OpCode {
-    fn default() -> Self {
-        OpCode::Unknown
-    }
-}
-
-pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
-    match n {
-        0 => Some(OpCode::OpReturn),
-        1 => Some(OpCode::OpConstant),
-        2 => Some(OpCode::OpConstantLong),
-        _ => None,
-    }
-}
+use crate::common::{opcode_from_u8, OpCode};
 
 #[derive(Default)]
 pub struct Chunk {

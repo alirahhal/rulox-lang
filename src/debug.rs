@@ -1,5 +1,6 @@
-use crate::chunk::{opcode_from_u8, Chunk, OpCode};
+use crate::chunk::{Chunk};
 use crate::value::print_value;
+use crate::common::{opcode_from_u8, OpCode};
 use byteorder::{ByteOrder, LittleEndian};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
