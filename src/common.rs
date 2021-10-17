@@ -4,6 +4,7 @@ pub enum OpCode {
     OpReturn,
     OpConstant,
     OpConstantLong,
+    OpNegate,
     Unknown,
 }
 
@@ -18,6 +19,7 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         0 => Some(OpCode::OpReturn),
         1 => Some(OpCode::OpConstant),
         2 => Some(OpCode::OpConstantLong),
+        3 => Some(OpCode::OpNegate),
         _ => None,
     }
 }
