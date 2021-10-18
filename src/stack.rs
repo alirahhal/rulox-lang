@@ -5,10 +5,10 @@ pub struct Stack {
 }
 
 impl Stack {
-    pub fn new(initial_size: Option<usize>) -> Self {
-        match initial_size {
-            Some(size) => Stack {
-                stack: Vec::with_capacity(size),
+    pub fn new(initial_capacity: Option<usize>) -> Self {
+        match initial_capacity {
+            Some(cap) => Stack {
+                stack: Vec::with_capacity(cap),
             },
             None => Stack { stack: Vec::new() },
         }

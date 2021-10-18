@@ -1,3 +1,5 @@
+use byteorder::{ByteOrder, LittleEndian};
+
 use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
@@ -23,18 +25,17 @@ pub struct VM<'a> {
     pub stack: Stack,
 }
 
-// TODO: vm to be boxed
-pub fn interpret(chunk: &Chunk) -> InterpretResult {
-    let mut vm = VM {
-        chunk,
-        ip: &chunk.code[0],
-        stack: Stack::new(Some(STACK_INITIAL_SIZE)),
-    };
-    vm.run()
-}
-
 impl<'a> VM<'a> {
-    pub fn run(&mut self) -> InterpretResult {
+    pub fn interpret(chunk: &Chunk) -> InterpretResult {
+        let mut vm = VM {
+            chunk,
+            ip: &chunk.code[0],
+            stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+        };
+        vm.run()
+    }
+
+    fn run(&mut self) -> InterpretResult {
         loop {
             if DEBUG_TRACE_EXECUTION {
                 print!("    ");
@@ -54,10 +55,22 @@ impl<'a> VM<'a> {
                     let constant = self.read_constant();
                     self.stack.push(constant);
                 }
-                // TODO: support long constants
-                // OpCode::OpConstantLong => {
-                //     return long_constant_instruction(String::from("OP_CONSTANT_LONG"), chunk, offset)
-                // }
+                OpCode::OpConstantLong => {
+                    let constant = self.read_long_constant();
+                    self.stack.push(constant);
+                }
+                OpCode::OpAdd => {
+                    self.binary_op(|a, b| a + b);
+                }
+                OpCode::OpSubstract => {
+                    self.binary_op(|a, b| a - b);
+                }
+                OpCode::OpMultiply => {
+                    self.binary_op(|a, b| a * b);
+                }
+                OpCode::OpDivide => {
+                    self.binary_op(|a, b| a / b);
+                }
                 OpCode::OpNegate => {
                     let value_to_negate = self.stack.pop().unwrap();
                     self.stack.push(-value_to_negate);
@@ -72,6 +85,12 @@ impl<'a> VM<'a> {
                 }
             }
         }
+    }
+
+    fn binary_op(&mut self, callback: fn(Value, Value) -> Value) {
+        let b = self.stack.pop().unwrap();
+        let a = self.stack.pop().unwrap();
+        self.stack.push(callback(a, b));
     }
 
     fn reset_stack(&mut self) {
@@ -89,5 +108,16 @@ impl<'a> VM<'a> {
 
     fn read_constant(&mut self) -> Value {
         self.chunk.constants.values[unsafe { self.read_byte() } as usize]
+    }
+
+    fn read_long_constant(&mut self) -> Value {
+        let mut buf = [0 as u8; 4];
+        for i in 0..3 {
+            unsafe {
+                buf[i] = self.read_byte();
+            }
+        }
+        let constant_address = LittleEndian::read_u32(&buf);
+        self.chunk.constants.values[constant_address as usize]
     }
 }

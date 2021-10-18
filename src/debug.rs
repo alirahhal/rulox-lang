@@ -29,6 +29,10 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpConstantLong => {
             return long_constant_instruction(String::from("OP_CONSTANT_LONG"), chunk, offset)
         }
+        OpCode::OpAdd => return simple_instruction(String::from("OP_ADD"), offset),
+        OpCode::OpSubstract => return simple_instruction(String::from("OP_SUBTRACT"), offset),
+        OpCode::OpMultiply => return simple_instruction(String::from("OP_MULTIPLY"), offset),
+        OpCode::OpDivide => return simple_instruction(String::from("OP_DIVIDE"), offset),
         OpCode::OpNegate => return simple_instruction(String::from("OP_NEGATE"), offset),
         _ => {
             println!("Unknown opcode {:?}\n", instruction);
