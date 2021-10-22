@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
     debug,
-    stack::Stack,
+    utils::stack::Stack,
     value::{print_value, Value},
 };
 

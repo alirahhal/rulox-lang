@@ -60,6 +60,6 @@ fn long_constant_instruction(name: String, chunk: &Chunk, offset: i32) -> i32 {
 }
 
 fn simple_instruction(name: String, offset: i32) -> i32 {
-    println!("{}\n", name);
+    print!("{}\n", name);
     offset + 1
 }
