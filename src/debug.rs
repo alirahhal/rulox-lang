@@ -15,7 +15,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
 pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
     print!("{:#04} ", offset);
     if offset > 0 && chunk.lines[offset as usize] == chunk.lines[(offset - 1) as usize] {
-        print!("   | ");
+        print!("    | ");
     } else {
         print!("{:#4} ", chunk.lines[offset as usize]);
     }

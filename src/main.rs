@@ -1,25 +1,57 @@
 mod chunk;
 mod common;
+mod compiler;
 mod debug;
+mod scanner;
 mod utils;
 mod value;
 mod vm;
 
+use std::{
+    env, fs,
+    io::{self, Write},
+    process,
+};
+
 fn main() {
-    let mut chunk = chunk::Chunk::new();
+    let args: Vec<String> = env::args().collect();
+    // println!("{:?}", args.len());
 
-    chunk.write_constant(1 as f64, 123);
-    chunk.write_constant(3 as f64, 123);
+    if args.len() == 1 {
+        repl();
+    } else if args.len() == 2 {
+        run_file(&args[1]);
+    } else {
+        eprintln!("Usage: clox [path]");
+        process::exit(64);
+    }
+}
 
-    chunk.write_chunk(common::OpCode::OpAdd as u8, 123);
+fn run_file(path: &String) {
+    let source = fs::read_to_string(path).expect("Something went wrong reading the file");
 
-    chunk.write_constant(5 as f64, 123);
+    let result = vm::VM::interpret(&source);
 
-    chunk.write_chunk(common::OpCode::OpDivide as u8, 123);
-    chunk.write_chunk(common::OpCode::OpNegate as u8, 123);
+    match result {
+        vm::InterpretResult::InterpretCompileError => process::exit(65),
+        vm::InterpretResult::InterpretRuntimeError => process::exit(70),
+        _ => (),
+    }
+}
 
-    chunk.write_chunk(common::OpCode::OpReturn as u8, 123);
+fn repl() {
+    let mut line = String::new();
 
-    vm::VM::interpret(&chunk);
-    chunk.free_chunk();
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
+
+        if io::stdin().read_line(&mut line).unwrap_or(0) == 0 {
+            println!();
+            break;
+        }
+
+        vm::VM::interpret(&line);
+        line.clear();
+    }
 }

@@ -3,7 +3,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
-    debug,
+    compiler, debug,
     utils::stack::Stack,
     value::{print_value, Value},
 };
@@ -14,8 +14,7 @@ const STACK_INITIAL_SIZE: usize = 256;
 pub enum InterpretResult {
     InterpretOk,
     InterpretCompileError,
-    InterpretRuntimeError,
-    Unknown,
+    InterpretRuntimeError, // Unknown,
 }
 
 pub struct VM<'a> {
@@ -26,13 +25,21 @@ pub struct VM<'a> {
 }
 
 impl<'a> VM<'a> {
-    pub fn interpret(chunk: &Chunk) -> InterpretResult {
-        let mut vm = VM {
-            chunk,
-            ip: &chunk.code[0],
-            stack: Stack::new(Some(STACK_INITIAL_SIZE)),
-        };
-        vm.run()
+    // pub fn new() -> Self {
+    //     VM { ..Default::default() }
+    // }
+
+    pub fn interpret(source: &String) -> InterpretResult {
+        // let mut vm = VM {
+        //     chunk,
+        //     ip: &chunk.code[0],
+        //     stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+        // };
+        // vm.run()
+
+        println!("{}", source);
+        compiler::compile(source);
+        InterpretResult::InterpretOk
     }
 
     fn run(&mut self) -> InterpretResult {
