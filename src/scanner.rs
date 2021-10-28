@@ -1,4 +1,4 @@
-use crate::{common::TokenType, main};
+use crate::common::TokenType;
 
 // TODO: Change [start] and [current] type to pointer for performance enhancement
 pub struct Scanner<'a> {
@@ -34,6 +34,9 @@ impl<'a> Scanner<'a> {
 
         let c = self.advance();
 
+        if c.is_alphabetic() {
+            return self.identifier();
+        }
         if c.is_digit(10) {
             return self.number();
         }
@@ -119,6 +122,85 @@ impl<'a> Scanner<'a> {
                 _ => return,
             }
         }
+    }
+
+    fn identifier_type(&mut self) -> TokenType {
+        match self.source.chars().nth((self.start) as usize).unwrap() {
+            'a' => return self.check_keyword(1, 2, "nd".to_string(), TokenType::TokenAnd),
+            'c' => return self.check_keyword(1, 4, "lass".to_string(), TokenType::TokenClass),
+            'e' => return self.check_keyword(1, 3, "lse".to_string(), TokenType::TokenElse),
+            'f' => {
+                if self.current - self.start > 1 {
+                    match self.source.chars().nth((self.start + 1) as usize).unwrap() {
+                        'a' => {
+                            return self.check_keyword(
+                                2,
+                                3,
+                                "lse".to_string(),
+                                TokenType::TokenFalse,
+                            )
+                        }
+                        'o' => {
+                            return self.check_keyword(2, 1, "r".to_string(), TokenType::TokenFor)
+                        }
+                        'u' => {
+                            return self.check_keyword(2, 1, "n".to_string(), TokenType::TokenFun)
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            'i' => return self.check_keyword(1, 1, "f".to_string(), TokenType::TokenIf),
+            'n' => return self.check_keyword(1, 2, "il".to_string(), TokenType::TokenNil),
+            'o' => return self.check_keyword(1, 1, "r".to_string(), TokenType::TokenOr),
+            'p' => return self.check_keyword(1, 4, "rint".to_string(), TokenType::TokenPrint),
+            'r' => return self.check_keyword(1, 5, "eturn".to_string(), TokenType::TokenReturn),
+            's' => return self.check_keyword(1, 4, "uper".to_string(), TokenType::TokenSuper),
+            't' => {
+                if self.current - self.start > 1 {
+                    match self.source.chars().nth((self.start + 1) as usize).unwrap() {
+                        'h' => {
+                            return self.check_keyword(2, 2, "is".to_string(), TokenType::TokenThis)
+                        }
+                        'r' => {
+                            return self.check_keyword(2, 2, "ue".to_string(), TokenType::TokenTrue)
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            'v' => return self.check_keyword(1, 2, "ar".to_string(), TokenType::TokenVar),
+            'w' => return self.check_keyword(1, 4, "hile".to_string(), TokenType::TokenWhile),
+            _ => (),
+        }
+
+        TokenType::TokenIdentifier
+    }
+
+    fn check_keyword(
+        &mut self,
+        start: i32,
+        length: i32,
+        rest: String,
+        token_type: TokenType,
+    ) -> TokenType {
+        if self.current - self.start == start + length
+            && self.source[(self.start + start) as usize..(self.start + start + length) as usize]
+                == rest
+        {
+            return token_type;
+        }
+
+        TokenType::TokenIdentifier
+    }
+
+    fn identifier(&mut self) -> Token {
+        while self.peek().is_alphabetic() || self.peek().is_digit(10) {
+            self.advance();
+        }
+
+        let id = self.identifier_type();
+        self.make_token(id)
     }
 
     fn peek(&mut self) -> char {
