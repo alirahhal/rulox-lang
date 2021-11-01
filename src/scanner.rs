@@ -204,6 +204,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek(&mut self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
         return self.source.chars().nth((self.current) as usize).unwrap();
     }
 
@@ -211,6 +215,7 @@ impl<'a> Scanner<'a> {
         if self.is_at_end() {
             return '\0';
         }
+
         return self
             .source
             .chars()
@@ -272,7 +277,7 @@ impl<'a> Scanner<'a> {
     fn make_token(&mut self, token_type: TokenType) -> Token {
         let token = Token {
             token_type,
-            lexeme: self.source[(self.start as usize)..(self.start as usize)].to_string(),
+            lexeme: self.source[(self.start as usize)..(self.current as usize)].to_string(),
             line: self.line,
         };
         token
