@@ -15,7 +15,6 @@ use std::{
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    // println!("{:?}", args.len());
 
     if args.len() == 1 {
         repl();

@@ -1,6 +1,5 @@
 use crate::common::TokenType;
 
-// TODO: Change [start] and [current] type to pointer for performance enhancement
 pub struct Scanner<'a> {
     pub source: &'a String,
     pub start: i32,
@@ -212,7 +211,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek_next(&mut self) -> char {
-        if self.is_at_end() {
+        if self.current + 1 >= self.source.chars().count() as i32 {
             return '\0';
         }
 
@@ -290,5 +289,203 @@ impl<'a> Scanner<'a> {
             line: self.line,
         };
         token
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    pub struct TestSuite {
+        source: String,
+        wanted_token: TokenType,
+    }
+
+    #[test]
+    fn skip_whitespaces() {
+        let source = " \r\t {".to_string();
+        let mut scanner = Scanner::init_scanner(&source);
+
+        let t = scanner.scan_token();
+        assert_eq!(
+            t.token_type,
+            TokenType::TokenLeftBrace,
+            "Expected to remove leading whitespaces"
+        );
+    }
+
+    #[test]
+    fn scan_tokens() {
+        let test_suites: Vec<TestSuite> = vec![
+            TestSuite {
+                source: "{".to_string(),
+                wanted_token: TokenType::TokenLeftBrace,
+            },
+            TestSuite {
+                source: "}".to_string(),
+                wanted_token: TokenType::TokenRightBrace,
+            },
+            TestSuite {
+                source: "and".to_string(),
+                wanted_token: TokenType::TokenAnd,
+            },
+            TestSuite {
+                source: "class".to_string(),
+                wanted_token: TokenType::TokenClass,
+            },
+            TestSuite {
+                source: "!".to_string(),
+                wanted_token: TokenType::TokenBang,
+            },
+            TestSuite {
+                source: "!=".to_string(),
+                wanted_token: TokenType::TokenBangEqual,
+            },
+            TestSuite {
+                source: ",".to_string(),
+                wanted_token: TokenType::TokenComma,
+            },
+            TestSuite {
+                source: ".".to_string(),
+                wanted_token: TokenType::TokenDot,
+            },
+            TestSuite {
+                source: "else".to_string(),
+                wanted_token: TokenType::TokenElse,
+            },
+            TestSuite {
+                source: "".to_string(),
+                wanted_token: TokenType::TokenEof,
+            },
+            TestSuite {
+                source: "=".to_string(),
+                wanted_token: TokenType::TokenEqual,
+            },
+            TestSuite {
+                source: "==".to_string(),
+                wanted_token: TokenType::TokenEqualEqual,
+            },
+            TestSuite {
+                source: "false".to_string(),
+                wanted_token: TokenType::TokenFalse,
+            },
+            TestSuite {
+                source: "for".to_string(),
+                wanted_token: TokenType::TokenFor,
+            },
+            TestSuite {
+                source: "fun".to_string(),
+                wanted_token: TokenType::TokenFun,
+            },
+            TestSuite {
+                source: ">".to_string(),
+                wanted_token: TokenType::TokenGreater,
+            },
+            TestSuite {
+                source: ">=".to_string(),
+                wanted_token: TokenType::TokenGreaterEqual,
+            },
+            TestSuite {
+                source: "if".to_string(),
+                wanted_token: TokenType::TokenIf,
+            },
+            TestSuite {
+                source: "(".to_string(),
+                wanted_token: TokenType::TokenLeftParen,
+            },
+            TestSuite {
+                source: ")".to_string(),
+                wanted_token: TokenType::TokenRightParen,
+            },
+            TestSuite {
+                source: "<".to_string(),
+                wanted_token: TokenType::TokenLess,
+            },
+            TestSuite {
+                source: "<=".to_string(),
+                wanted_token: TokenType::TokenLessEqual,
+            },
+            TestSuite {
+                source: "-".to_string(),
+                wanted_token: TokenType::TokenMinus,
+            },
+            TestSuite {
+                source: "nil".to_string(),
+                wanted_token: TokenType::TokenNil,
+            },
+            TestSuite {
+                source: "123.1".to_string(),
+                wanted_token: TokenType::TokenNumber,
+            },
+            TestSuite {
+                source: "or".to_string(),
+                wanted_token: TokenType::TokenOr,
+            },
+            TestSuite {
+                source: "+".to_string(),
+                wanted_token: TokenType::TokenPlus,
+            },
+            TestSuite {
+                source: "print".to_string(),
+                wanted_token: TokenType::TokenPrint,
+            },
+            TestSuite {
+                source: "return".to_string(),
+                wanted_token: TokenType::TokenReturn,
+            },
+            TestSuite {
+                source: ";".to_string(),
+                wanted_token: TokenType::TokenSemicolon,
+            },
+            TestSuite {
+                source: "/".to_string(),
+                wanted_token: TokenType::TokenSlash,
+            },
+            TestSuite {
+                source: "*".to_string(),
+                wanted_token: TokenType::TokenStar,
+            },
+            TestSuite {
+                source: "super".to_string(),
+                wanted_token: TokenType::TokenSuper,
+            },
+            TestSuite {
+                source: "this".to_string(),
+                wanted_token: TokenType::TokenThis,
+            },
+            TestSuite {
+                source: "true".to_string(),
+                wanted_token: TokenType::TokenTrue,
+            },
+            TestSuite {
+                source: "var".to_string(),
+                wanted_token: TokenType::TokenVar,
+            },
+            TestSuite {
+                source: "while".to_string(),
+                wanted_token: TokenType::TokenWhile,
+            },
+            TestSuite {
+                source: "\"hellow world\"".to_string(),
+                wanted_token: TokenType::TokenString,
+            },
+            TestSuite {
+                source: "id".to_string(),
+                wanted_token: TokenType::TokenIdentifier,
+            },
+        ];
+
+        let mut scanner: Scanner;
+
+        for t in test_suites {
+            scanner = Scanner::init_scanner(&t.source);
+            let token = scanner.scan_token();
+
+            assert_eq!(
+                token.token_type, t.wanted_token,
+                "Expected to scan {:?} token, got {:?}",
+                t.wanted_token, token.token_type
+            );
+        }
     }
 }
