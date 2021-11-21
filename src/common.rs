@@ -33,7 +33,7 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     TokenLeftParen,

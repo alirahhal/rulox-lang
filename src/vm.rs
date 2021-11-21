@@ -1,10 +1,10 @@
 use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
-    chunk::Chunk,
+    chunk::{self, Chunk},
     common::{opcode_from_u8, OpCode},
     compiler, debug,
-    utils::stack::Stack,
+    utils::stack::{self, Stack},
     value::{print_value, Value},
 };
 
@@ -24,23 +24,38 @@ pub struct VM<'a> {
     pub stack: Stack,
 }
 
+pub fn interpret(source: &String) -> InterpretResult {
+    let mut chunk = Chunk::new();
+
+    if !compiler::compile(source, &mut chunk) {
+        return InterpretResult::InterpretCompileError;
+    }
+
+    let mut vm = VM {
+        chunk: &chunk,
+        ip: &chunk.code[0],
+        stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+    };
+
+    // self.chunk = &chunk;
+    // self.ip = &self.chunk.code[0 as usize];
+
+    let result = vm.run();
+
+    chunk.free_chunk();
+    return result;
+}
+
 impl<'a> VM<'a> {
     // pub fn new() -> Self {
-    //     VM { ..Default::default() }
+    //     VM {
+    //         chunk: &Chunk {
+    //             ..Default::default()
+    //         },
+    //         ip: &0,
+    //         stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+    //     }
     // }
-
-    pub fn interpret(source: &String) -> InterpretResult {
-        // let mut vm = VM {
-        //     chunk,
-        //     ip: &chunk.code[0],
-        //     stack: Stack::new(Some(STACK_INITIAL_SIZE)),
-        // };
-        // vm.run()
-
-        println!("{}", source);
-        compiler::compile(source);
-        InterpretResult::InterpretOk
-    }
 
     fn run(&mut self) -> InterpretResult {
         loop {

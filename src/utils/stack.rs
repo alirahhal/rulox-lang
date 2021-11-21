@@ -1,5 +1,6 @@
 use crate::value::Value;
 
+#[derive(Default)]
 pub struct Stack {
     stack: Vec<Value>,
 }

@@ -1,15 +1,29 @@
 use crate::common::TokenType;
 
+pub struct Token {
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub line: i32,
+}
+
+impl Clone for Token {
+    fn clone(&self) -> Self {
+        Self {
+            token_type: self.token_type.clone(),
+            lexeme: self.lexeme.clone(),
+            line: self.line.clone(),
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        *self = source.clone();
+    }
+}
+
 pub struct Scanner<'a> {
     pub source: &'a String,
     pub start: i32,
     pub current: i32,
-    pub line: i32,
-}
-
-pub struct Token {
-    pub token_type: TokenType,
-    pub lexeme: String,
     pub line: i32,
 }
 
