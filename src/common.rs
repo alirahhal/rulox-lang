@@ -1,3 +1,5 @@
+use derivative::*; // 2.2.0
+
 #[repr(u8)]
 #[derive(Debug, PartialEq)]
 pub enum OpCode {
@@ -9,6 +11,7 @@ pub enum OpCode {
     OpMultiply,
     OpDivide,
     OpNegate,
+
     Unknown,
 }
 
@@ -33,7 +36,8 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, Derivative, Copy, Clone)]
+#[derivative(PartialEq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
     TokenLeftParen,
@@ -83,6 +87,7 @@ pub enum TokenType {
 
     TokenError,
     TokenEof,
+
     Unknown,
 }
 
@@ -105,3 +110,44 @@ impl Default for TokenType {
 //         _ => None,
 //     }
 // }
+
+#[repr(u8)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Precedence {
+    PrecNone,
+    PrecAssignment, // =
+    PrecOr,         // or
+    PrecAnd,        // and
+    PrecEquality,   // == !=
+    PrecComparison, // < > <= >=
+    PrecTerm,       // + -
+    PrecFactor,     // * /
+    PrecUnary,      // ! -
+    PrecCall,       // . ()
+    PrecPrimary,
+
+    Unknown,
+}
+
+impl Default for Precedence {
+    fn default() -> Self {
+        Precedence::Unknown
+    }
+}
+
+pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
+    match n {
+        0 => Some(Precedence::PrecNone),
+        1 => Some(Precedence::PrecAssignment),
+        2 => Some(Precedence::PrecOr),
+        3 => Some(Precedence::PrecAnd),
+        4 => Some(Precedence::PrecEquality),
+        5 => Some(Precedence::PrecComparison),
+        6 => Some(Precedence::PrecTerm),
+        7 => Some(Precedence::PrecFactor),
+        8 => Some(Precedence::PrecUnary),
+        9 => Some(Precedence::PrecCall),
+        10 => Some(Precedence::PrecPrimary),
+        _ => None,
+    }
+}
