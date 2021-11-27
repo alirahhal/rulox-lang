@@ -2,10 +2,10 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
     chunk::{self, Chunk},
-    common::{opcode_from_u8, OpCode},
+    common::{opcode_from_u8, OpCode, Result},
     compiler, debug,
     utils::stack::{self, Stack},
-    value::{print_value, Value},
+    value::Value,
 };
 
 const DEBUG_TRACE_EXECUTION: bool = true;
@@ -81,24 +81,82 @@ impl<'a> VM<'a> {
                     let constant = self.read_long_constant();
                     self.stack.push(constant);
                 }
+                OpCode::OpNil => {
+                    self.stack.push(Value::new_nil());
+                }
+                OpCode::OpTrue => {
+                    self.stack.push(Value::new_bool(true));
+                }
+                OpCode::OpFalse => {
+                    self.stack.push(Value::new_bool(false));
+                }
+                OpCode::OpEqual => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    self.stack.push(Value::new_bool(a.values_equal(&b)));
+                }
+                OpCode::OpGreater => {
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_bool(a.as_number() > b.as_number()));
+                }
+                OpCode::OpLess => {
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_bool(a.as_number() < b.as_number()));
+                }
                 OpCode::OpAdd => {
-                    self.binary_op(|a, b| a + b);
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_number(a.as_number() + b.as_number()));
                 }
                 OpCode::OpSubstract => {
-                    self.binary_op(|a, b| a - b);
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_number(a.as_number() - b.as_number()));
                 }
                 OpCode::OpMultiply => {
-                    self.binary_op(|a, b| a * b);
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_number(a.as_number() * b.as_number()));
                 }
                 OpCode::OpDivide => {
-                    self.binary_op(|a, b| a / b);
+                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                        self.runtime_error("Operands must be numbers.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.binary_op(|a, b| Value::new_number(a.as_number() / b.as_number()));
+                }
+                OpCode::OpNot => {
+                    let popped = self.stack.pop().unwrap();
+                    self.stack.push(Value::new_bool(popped.is_falsey()));
                 }
                 OpCode::OpNegate => {
-                    let value_to_negate = self.stack.pop().unwrap();
-                    self.stack.push(-value_to_negate);
+                    if !self.peek(0).is_number() {
+                        self.runtime_error("Operand must be a number.".to_string());
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+                    let value_to_negate = self.stack.pop().unwrap().as_number();
+                    self.stack.push(Value::new_number(-value_to_negate));
                 }
                 OpCode::OpReturn => {
-                    print_value(self.stack.pop().unwrap());
+                    self.stack.pop().unwrap().print_value();
                     println!();
                     return InterpretResult::InterpretOk;
                 }
@@ -119,6 +177,14 @@ impl<'a> VM<'a> {
         self.stack = Stack::new(Some(STACK_INITIAL_SIZE));
     }
 
+    fn peek(&self, distance: usize) -> &Value {
+        self.stack.peek(distance)
+    }
+
+    fn runtime_error(&self, message: String) {
+        println!("{}", message);
+    }
+
     unsafe fn read_byte(&mut self) -> u8 {
         let current_byte = *self.ip;
 
@@ -129,7 +195,7 @@ impl<'a> VM<'a> {
     }
 
     fn read_constant(&mut self) -> Value {
-        self.chunk.constants.values[unsafe { self.read_byte() } as usize]
+        self.chunk.constants.values[unsafe { self.read_byte() } as usize].clone()
     }
 
     fn read_long_constant(&mut self) -> Value {
@@ -140,6 +206,6 @@ impl<'a> VM<'a> {
             }
         }
         let constant_address = LittleEndian::read_u32(&buf);
-        self.chunk.constants.values[constant_address as usize]
+        self.chunk.constants.values[constant_address as usize].clone()
     }
 }

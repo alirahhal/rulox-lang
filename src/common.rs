@@ -1,4 +1,8 @@
+use std::error;
+
 use derivative::*; // 2.2.0
+
+pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[repr(u8)]
 #[derive(Debug, PartialEq)]
@@ -11,6 +15,13 @@ pub enum OpCode {
     OpMultiply,
     OpDivide,
     OpNegate,
+    OpNil,
+    OpTrue,
+    OpFalse,
+    OpNot,
+    OpEqual,
+    OpGreater,
+    OpLess,
 
     Unknown,
 }
@@ -31,6 +42,14 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         5 => Some(OpCode::OpMultiply),
         6 => Some(OpCode::OpDivide),
         7 => Some(OpCode::OpNegate),
+        8 => Some(OpCode::OpNil),
+        9 => Some(OpCode::OpTrue),
+        10 => Some(OpCode::OpFalse),
+        11 => Some(OpCode::OpNot),
+        12 => Some(OpCode::OpEqual),
+        13 => Some(OpCode::OpGreater),
+        14 => Some(OpCode::OpLess),
+
         _ => None,
     }
 }
@@ -150,4 +169,12 @@ pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
         10 => Some(Precedence::PrecPrimary),
         _ => None,
     }
+}
+
+#[repr(u8)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum ValueType {
+    ValBool,
+    ValNil,
+    ValNumber,
 }

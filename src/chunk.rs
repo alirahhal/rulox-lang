@@ -46,75 +46,75 @@ impl Chunk {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::common::opcode_from_u8;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::common::opcode_from_u8;
 
-    #[test]
-    fn write_constant_appends_constant_operation() {
-        let mut chunk = Chunk::new();
+//     #[test]
+//     fn write_constant_appends_constant_operation() {
+//         let mut chunk = Chunk::new();
 
-        chunk.write_constant(1 as f64, 1);
+//         chunk.write_constant(1 as f64, 1);
 
-        assert_eq!(
-            opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
-            OpCode::OpConstant,
-            "Write constant did not emit a constant operation, found: `{:?}`",
-            opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
-        );
-    }
+//         assert_eq!(
+//             opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
+//             OpCode::OpConstant,
+//             "Write constant did not emit a constant operation, found: `{:?}`",
+//             opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
+//         );
+//     }
 
-    #[test]
-    fn write_constant_once() {
-        let mut chunk = Chunk::new();
+//     #[test]
+//     fn write_constant_once() {
+//         let mut chunk = Chunk::new();
 
-        chunk.write_constant(1 as f64, 1);
+//         chunk.write_constant(1 as f64, 1);
 
-        assert_eq!(
-            chunk.constants.values[chunk.code[chunk.code.len() - 1] as usize],
-            1 as f64,
-        );
-    }
+//         assert_eq!(
+//             chunk.constants.values[chunk.code[chunk.code.len() - 1] as usize],
+//             1 as f64,
+//         );
+//     }
 
-    #[test]
-    fn write_constant_twice() {
-        let mut chunk = Chunk::new();
+//     #[test]
+//     fn write_constant_twice() {
+//         let mut chunk = Chunk::new();
 
-        chunk.write_constant(1 as f64, 1);
-        chunk.write_constant(2 as f64, 1);
+//         chunk.write_constant(1 as f64, 1);
+//         chunk.write_constant(2 as f64, 1);
 
-        assert_eq!(
-            chunk.constants.values[chunk.code[chunk.code.len() - 3] as usize],
-            1 as f64,
-        );
-        assert_eq!(
-            chunk.constants.values[chunk.code[chunk.code.len() - 1] as usize],
-            2 as f64,
-        );
-    }
+//         assert_eq!(
+//             chunk.constants.values[chunk.code[chunk.code.len() - 3] as usize],
+//             1 as f64,
+//         );
+//         assert_eq!(
+//             chunk.constants.values[chunk.code[chunk.code.len() - 1] as usize],
+//             2 as f64,
+//         );
+//     }
 
-    #[test]
-    fn write_constant_appends_long_constant_operation() {
-        let mut chunk = Chunk::new();
+//     #[test]
+//     fn write_constant_appends_long_constant_operation() {
+//         let mut chunk = Chunk::new();
 
-        let mut i = 0;
-        while i < 257 {
-            chunk.write_constant(i as f64, 1);
-            assert_eq!(
-                opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
-                OpCode::OpConstant,
-                "Write constant did not emit a constant operation, found: `{:?}`",
-                opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
-            );
-            i = i + 1;
-        }
+//         let mut i = 0;
+//         while i < 257 {
+//             chunk.write_constant(i as f64, 1);
+//             assert_eq!(
+//                 opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
+//                 OpCode::OpConstant,
+//                 "Write constant did not emit a constant operation, found: `{:?}`",
+//                 opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
+//             );
+//             i = i + 1;
+//         }
 
-        assert_eq!(
-            opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap(),
-            OpCode::OpConstantLong,
-            "Write constant did not emit a long constant operation, found: `{:?}`",
-            opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap()
-        );
-    }
-}
+//         assert_eq!(
+//             opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap(),
+//             OpCode::OpConstantLong,
+//             "Write constant did not emit a long constant operation, found: `{:?}`",
+//             opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap()
+//         );
+//     }
+// }
