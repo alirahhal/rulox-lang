@@ -22,6 +22,8 @@ pub enum OpCode {
     OpEqual,
     OpGreater,
     OpLess,
+    OpPrint,
+    OpPop,
 
     Unknown,
 }
@@ -49,6 +51,8 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         12 => Some(OpCode::OpEqual),
         13 => Some(OpCode::OpGreater),
         14 => Some(OpCode::OpLess),
+        15 => Some(OpCode::OpPrint),
+        16 => Some(OpCode::OpPop),
 
         _ => None,
     }

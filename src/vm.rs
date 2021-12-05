@@ -90,6 +90,9 @@ impl<'a> VM<'a> {
                 OpCode::OpFalse => {
                     self.stack.push(Value::new_bool(false));
                 }
+                OpCode::OpPop => {
+                    self.stack.pop();
+                }
                 OpCode::OpEqual => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
@@ -155,9 +158,12 @@ impl<'a> VM<'a> {
                     let value_to_negate = self.stack.pop().unwrap().as_number();
                     self.stack.push(Value::new_number(-value_to_negate));
                 }
-                OpCode::OpReturn => {
+                OpCode::OpPrint => {
                     self.stack.pop().unwrap().print_value();
                     println!();
+                }
+                OpCode::OpReturn => {
+                    // Exit interpreter.
                     return InterpretResult::InterpretOk;
                 }
                 _ => {

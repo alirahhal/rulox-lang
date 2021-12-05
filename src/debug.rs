@@ -40,6 +40,8 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpDivide => return simple_instruction(String::from("OP_DIVIDE"), offset),
         OpCode::OpNot => return simple_instruction(String::from("OP_NOT"), offset),
         OpCode::OpNegate => return simple_instruction(String::from("OP_NEGATE"), offset),
+        OpCode::OpPrint => return simple_instruction(String::from("OP_PRINT"), offset),
+        OpCode::OpPop => return simple_instruction(String::from("OP_POP"), offset),
         _ => {
             println!("Unknown opcode {:?}\n", instruction);
             return offset + 1;

@@ -14,8 +14,11 @@ pub fn compile(source: &String, chunk: &mut Chunk) -> bool {
     let mut parser = Parser::new(&mut scanner, chunk);
 
     parser.advance();
-    parser.expression();
-    parser.consume(TokenType::TokenEof, "Expect end of expression.".to_string());
+
+    while !parser.match_token_type(TokenType::TokenEof) {
+        parser.declaration();
+    }
+
     parser.end_compiler();
     !parser.had_error
 }
@@ -85,6 +88,14 @@ impl<'a> Parser<'a> {
                         prefix: None,
                         infix: Some(|parser: &mut Parser<'_>| Parser::binary(parser)),
                         precedence: Precedence::PrecTerm,
+                    },
+                ),
+                (
+                    TokenType::TokenSemicolon,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
                     },
                 ),
                 (
@@ -192,6 +203,14 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenPrint,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
                     TokenType::TokenEof,
                     ParseRule {
                         prefix: None,
@@ -226,6 +245,18 @@ impl<'a> Parser<'a> {
         }
 
         self.error_at_current(message);
+    }
+
+    fn check(&mut self, token_type: TokenType) -> bool {
+        self.current.token_type == token_type
+    }
+
+    pub fn match_token_type(&mut self, token_type: TokenType) -> bool {
+        if !self.check(token_type) {
+            return false;
+        }
+        self.advance();
+        true
     }
 
     fn emit_byte(&mut self, byte: u8) {
@@ -265,12 +296,18 @@ impl<'a> Parser<'a> {
         self.parse_precedence(precedence);
 
         match operator_type {
-            TokenType::TokenBangEqual => self.emit_bytes(OpCode::OpEqual as u8, OpCode::OpNot as u8),
+            TokenType::TokenBangEqual => {
+                self.emit_bytes(OpCode::OpEqual as u8, OpCode::OpNot as u8)
+            }
             TokenType::TokenEqualEqual => self.emit_byte(OpCode::OpEqual as u8),
             TokenType::TokenGreater => self.emit_byte(OpCode::OpGreater as u8),
-            TokenType::TokenGreaterEqual => self.emit_bytes(OpCode::OpLess as u8, OpCode::OpNot as u8),
+            TokenType::TokenGreaterEqual => {
+                self.emit_bytes(OpCode::OpLess as u8, OpCode::OpNot as u8)
+            }
             TokenType::TokenLess => self.emit_byte(OpCode::OpLess as u8),
-            TokenType::TokenLessEqual => self.emit_bytes(OpCode::OpGreater as u8, OpCode::OpNot as u8),
+            TokenType::TokenLessEqual => {
+                self.emit_bytes(OpCode::OpGreater as u8, OpCode::OpNot as u8)
+            }
             TokenType::TokenPlus => self.emit_byte(OpCode::OpAdd as u8),
             TokenType::TokenMinus => self.emit_byte(OpCode::OpSubstract as u8),
             TokenType::TokenStar => self.emit_byte(OpCode::OpMultiply as u8),
@@ -284,7 +321,7 @@ impl<'a> Parser<'a> {
             TokenType::TokenFalse => self.emit_byte(OpCode::OpFalse as u8),
             TokenType::TokenTrue => self.emit_byte(OpCode::OpTrue as u8),
             TokenType::TokenNil => self.emit_byte(OpCode::OpNil as u8),
-            _ => return
+            _ => return,
         }
     }
 
@@ -339,6 +376,66 @@ impl<'a> Parser<'a> {
 
     fn expression(&mut self) {
         self.parse_precedence(Precedence::PrecAssignment);
+    }
+
+    fn expression_statement(&mut self) {
+        self.expression();
+        self.consume(
+            TokenType::TokenSemicolon,
+            "Expect ';' after expression.".to_string(),
+        );
+        self.emit_byte(OpCode::OpPop as u8);
+    }
+
+    fn print_statement(&mut self) {
+        self.expression();
+        self.consume(
+            TokenType::TokenSemicolon,
+            "Expect ';' after value.".to_string(),
+        );
+        self.emit_byte(OpCode::OpPrint as u8);
+    }
+
+    fn synchronize(&mut self) {
+        self.panic_mode = false;
+
+        while self.current.token_type != TokenType::TokenEof {
+            if self.previous.token_type == TokenType::TokenSemicolon {
+                return;
+            }
+
+            match self.current.token_type {
+                TokenType::TokenClass
+                | TokenType::TokenFun
+                | TokenType::TokenVar
+                | TokenType::TokenFor
+                | TokenType::TokenIf
+                | TokenType::TokenWhile
+                | TokenType::TokenPrint
+                | TokenType::TokenReturn => {
+                    return;
+                }
+                _ => (),
+            }
+        }
+
+        self.advance();
+    }
+
+    fn declaration(&mut self) {
+        self.statement();
+
+        if self.panic_mode {
+            self.synchronize();
+        }
+    }
+
+    fn statement(&mut self) {
+        if self.match_token_type(TokenType::TokenPrint) {
+            self.print_statement();
+        } else {
+            self.expression_statement();
+        }
     }
 
     fn error_at(&mut self, token: Token, message: String) {
