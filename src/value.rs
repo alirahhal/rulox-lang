@@ -52,27 +52,19 @@ impl Value {
     }
 
     pub fn is_bool(&self) -> bool {
-        if self.value_type == ValueType::ValBool {
-            true
-        } else {
-            false
-        }
+        self.value_type == ValueType::ValBool
     }
 
     pub fn is_nil(&self) -> bool {
-        if self.value_type == ValueType::ValNil {
-            true
-        } else {
-            false
-        }
+        self.value_type == ValueType::ValNil
     }
 
     pub fn is_number(&self) -> bool {
-        if self.value_type == ValueType::ValNumber {
-            true
-        } else {
-            false
-        }
+        self.value_type == ValueType::ValNumber
+    }
+
+    pub fn is_obj(&self) -> bool {
+        self.value_type == ValueType::ValObj
     }
 
     pub fn is_falsey(&self) -> bool {
