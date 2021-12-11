@@ -4,6 +4,7 @@ use crate::{
     chunk::Chunk,
     common::{precedence_from_u8, OpCode, Precedence, TokenType},
     debug::disassemble_chunk,
+    object::{Obj, ObjString, ObjType},
     scanner::{Scanner, Token},
     value::Value,
 };
@@ -171,6 +172,14 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenString,
+                    ParseRule {
+                        prefix: Some(|parser: &mut Parser<'_>| Parser::string(parser)),
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
                     TokenType::TokenNumber,
                     ParseRule {
                         prefix: Some(|parser: &mut Parser<'_>| Parser::number(parser)),
@@ -335,6 +344,19 @@ impl<'a> Parser<'a> {
 
     fn number(&mut self) {
         let value: Value = Value::new_number(self.previous.lexeme.parse().unwrap());
+        self.emit_constant(value);
+    }
+
+    fn string(&mut self) {
+        // let value: Value = Value::new_number(self.previous.lexeme.parse().unwrap());
+        let slen = self.previous.lexeme.len();
+        let obj_s = ObjString {
+            obj: Obj {
+                obj_type: ObjType::ObjString,
+            },
+            string: self.previous.lexeme[1..slen - 1].to_string(),
+        };
+
         self.emit_constant(value);
     }
 

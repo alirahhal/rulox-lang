@@ -1,18 +1,63 @@
+use std::mem::ManuallyDrop;
 use std::{any::Any, fmt, rc::Rc};
 
 use crate::common::ValueType;
+use crate::object::{Obj, ObjString, ObjType};
 
-#[derive(Debug)]
+#[repr(C)]
+pub union InnerValue {
+    boolean: bool,
+    number: i64,
+    obj: ManuallyDrop<Rc<Obj>>,
+}
+
+impl Drop for InnerValue {
+    fn drop(&mut self) {
+        unsafe { ManuallyDrop::drop(&mut self.obj) }
+    }
+}
 pub struct Value {
     pub value_type: ValueType,
-    pub value: Rc<dyn Any>,
+    pub value: InnerValue,
 }
 
 impl Clone for Value {
     fn clone(&self) -> Self {
-        Self {
-            value_type: self.value_type,
-            value: Rc::clone(&self.value),
+        unsafe {
+            match self.value_type {
+                ValueType::ValBool => {
+                    return Self {
+                        value_type: self.value_type,
+                        value: InnerValue {
+                            boolean: self.value.boolean,
+                        },
+                    }
+                }
+                ValueType::ValNil => {
+                    return Self {
+                        value_type: self.value_type,
+                        value: InnerValue {
+                            number: self.value.number,
+                        },
+                    }
+                }
+                ValueType::ValNumber => {
+                    return Self {
+                        value_type: self.value_type,
+                        value: InnerValue {
+                            number: self.value.number,
+                        },
+                    }
+                }
+                ValueType::ValObj => {
+                    return Self {
+                        value_type: self.value_type,
+                        value: InnerValue {
+                            obj: ManuallyDrop::new(Rc::clone(&(*self.value.obj))),
+                        },
+                    }
+                }
+            }
         }
     }
 
@@ -25,30 +70,57 @@ impl Value {
     pub fn new_bool(val: bool) -> Self {
         Value {
             value_type: ValueType::ValBool,
-            value: Rc::new(val),
+            value: InnerValue { boolean: val },
         }
     }
 
     pub fn new_nil() -> Self {
         Value {
             value_type: ValueType::ValNil,
-            value: Rc::new(0),
+            value: InnerValue { number: 0 },
         }
     }
 
     pub fn new_number(val: i64) -> Self {
         Value {
             value_type: ValueType::ValNumber,
-            value: Rc::new(val),
+            value: InnerValue { number: val },
+        }
+    }
+
+    pub fn new_obj(obj: Obj) -> Self {
+        Value {
+            value_type: ValueType::ValObj,
+            value: InnerValue {
+                obj: ManuallyDrop::new(Rc::new(obj)),
+            },
         }
     }
 
     pub fn as_bool(&self) -> bool {
-        *self.value.downcast_ref::<bool>().unwrap()
+        unsafe {
+            return self.value.boolean;
+        }
     }
 
     pub fn as_number(&self) -> i64 {
-        *self.value.downcast_ref::<i64>().unwrap()
+        unsafe {
+            return self.value.number;
+        }
+    }
+
+    pub fn as_obj(&self) -> Rc<Obj> {
+        unsafe {
+            return Rc::clone(&(*self.value.obj));
+        }
+    }
+
+    pub fn as_string(&self) -> Rc<ObjString> {
+        unsafe { std::mem::transmute::<Rc<Obj>, Rc<ObjString>>(self.as_obj()) }
+    }
+
+    pub fn as_rust_string(&self) -> String {
+        self.as_string().string.clone()
     }
 
     pub fn is_bool(&self) -> bool {
@@ -71,6 +143,14 @@ impl Value {
         self.is_nil() || (self.is_bool() && !self.as_bool())
     }
 
+    pub fn obj_type(&self) -> ObjType {
+        self.as_obj().obj_type
+    }
+
+    pub fn is_obj_type(&self, obj_type: ObjType) -> bool {
+        return self.is_obj() && self.obj_type() == obj_type;
+    }
+
     pub fn print_value(&self) {
         match self.value_type {
             ValueType::ValBool => {
@@ -82,6 +162,7 @@ impl Value {
             }
             ValueType::ValNil => print!("nil"),
             ValueType::ValNumber => print!("{}", self.as_number()),
+            ValueType::ValObj => todo!(),
         }
     }
 
@@ -94,7 +175,7 @@ impl Value {
             ValueType::ValBool => self.as_bool() == other.as_bool(),
             ValueType::ValNil => true,
             ValueType::ValNumber => self.as_number() == other.as_number(),
-            _ => false
+            _ => false,
         }
     }
 }
@@ -111,6 +192,7 @@ impl fmt::Display for Value {
             }
             ValueType::ValNil => write!(f, "nil"),
             ValueType::ValNumber => write!(f, "{}", self.as_number()),
+            ValueType::ValObj => todo!(),
         }
     }
 }

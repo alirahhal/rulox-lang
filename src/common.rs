@@ -181,5 +181,5 @@ pub enum ValueType {
     ValBool,
     ValNil,
     ValNumber,
-    ValObj
+    ValObj,
 }
