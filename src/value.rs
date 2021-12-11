@@ -1,6 +1,7 @@
 use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use std::ptr;
-use std::{rc::Rc};
+use std::rc::Rc;
 
 use crate::common::ValueType;
 use crate::object::{Obj, ObjString, ObjType};
@@ -9,7 +10,7 @@ use crate::object::{Obj, ObjString, ObjType};
 pub union InnerValue {
     boolean: bool,
     number: i64,
-    obj: ManuallyDrop<Rc<Obj>>,
+    obj: ManuallyDrop<Rc<dyn Obj>>,
 }
 
 pub struct Value {
@@ -49,9 +50,9 @@ impl Clone for Value {
                     return Self {
                         value_type: self.value_type,
                         value: InnerValue {
-                            obj: ManuallyDrop::new(Rc::clone(&(*self.value.obj))),
+                            obj: ManuallyDrop::new(Rc::clone(&self.value.obj.deref())),
                         },
-                    }
+                    };
                 }
             }
         }
@@ -92,7 +93,7 @@ impl Value {
         }
     }
 
-    pub fn new_obj(obj: Rc<Obj>) -> Self {
+    pub fn new_obj(obj: Rc<dyn Obj>) -> Self {
         Value {
             value_type: ValueType::ValObj,
             value: InnerValue {
@@ -113,14 +114,15 @@ impl Value {
         }
     }
 
-    pub fn as_obj(&self) -> Rc<Obj> {
+    pub fn as_obj(&self) -> Rc<dyn Obj> {
         unsafe {
-            return Rc::clone(&(*self.value.obj));
+            Rc::clone(&self.value.obj.deref())
         }
     }
 
-    pub fn as_string(&self) -> Rc<ObjString> {
-        unsafe { std::mem::transmute::<Rc<Obj>, Rc<ObjString>>(self.as_obj()) }
+    pub fn as_string(&self) -> ObjString {
+        let c = self.as_obj();
+        c.as_obj_string().unwrap().clone()
     }
 
     pub fn as_rust_string(&self) -> String {
@@ -148,7 +150,7 @@ impl Value {
     }
 
     pub fn obj_type(&self) -> ObjType {
-        self.as_obj().obj_type
+        self.as_obj().obj_type()
     }
 
     pub fn is_obj_type(&self, obj_type: ObjType) -> bool {
@@ -189,7 +191,7 @@ impl Value {
                 let a_obj = self.as_obj();
                 let b_obj = other.as_obj();
 
-                if a_obj.obj_type == ObjType::ObjString {
+                if a_obj.obj_type() == ObjType::ObjString {
                     return self.as_rust_string() == other.as_rust_string();
                 } else {
                     return ptr::eq(a_obj.as_ref(), b_obj.as_ref());

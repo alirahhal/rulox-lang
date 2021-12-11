@@ -349,15 +349,11 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self) {
         let slen = self.previous.lexeme.len();
-        let p = Rc::new(ObjString {
-            obj: Obj {
-                obj_type: ObjType::ObjString,
-            },
+        let p: Rc<dyn Obj> = Rc::new(ObjString {
+            obj_type: ObjType::ObjString,
             string: self.previous.lexeme[1..slen - 1].to_string(),
         });
-
-        let c = unsafe { Rc::from_raw(p.deref().deref()) };
-        let value = Value::new_obj(c);
+        let value = Value::new_obj(p);
 
         self.emit_constant(&value);
     }

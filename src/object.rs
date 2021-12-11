@@ -4,32 +4,37 @@ pub enum ObjType {
     ObjString,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Obj {
-    pub obj_type: ObjType,
+pub trait Obj {
+    fn obj_type(&self) -> ObjType;
+    fn as_obj_string(&self) -> Option<&ObjString>;
 }
 
 pub struct ObjString {
-    pub obj: Obj,
+    pub obj_type: ObjType,
     pub string: String,
+}
+
+impl Obj for ObjString {
+    fn obj_type(&self) -> ObjType {
+        self.obj_type
+    }
+
+    fn as_obj_string(&self) -> Option<&ObjString> {
+        match self.obj_type {
+            ObjType::ObjString => Some(self),
+        }
+    }
 }
 
 impl Clone for ObjString {
     fn clone(&self) -> Self {
         Self {
-            obj: self.obj,
+            obj_type: self.obj_type,
             string: self.string.to_owned(),
         }
     }
 
     fn clone_from(&mut self, source: &Self) {
         *self = source.clone();
-    }
-}
-
-impl std::ops::Deref for ObjString {
-    type Target = Obj;
-    fn deref(&self) -> &Self::Target {
-        &self.obj
     }
 }
