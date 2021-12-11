@@ -20,7 +20,7 @@ impl Chunk {
         self.lines.push(line);
     }
 
-    pub fn write_constant(&mut self, value: Value, line: i32) {
+    pub fn write_constant(&mut self, value: &Value, line: i32) {
         let index = self.add_constant(value);
 
         if index < 256 {
@@ -34,7 +34,7 @@ impl Chunk {
         }
     }
 
-    pub fn add_constant(&mut self, value: Value) -> i32 {
+    pub fn add_constant(&mut self, value: &Value) -> i32 {
         self.constants.write_value_array(value);
         return (self.constants.values.len() - 1) as i32;
     }

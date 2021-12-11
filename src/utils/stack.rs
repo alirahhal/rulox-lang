@@ -31,9 +31,10 @@ impl Stack {
         print!("[ ");
         for v in self.stack.iter().enumerate() {
             if v.0 == self.stack.len() - 1 {
-                print!("{}", v.1);
+                v.1.print_value();
             } else {
-                print!("{}, ", v.1);
+                v.1.print_value();
+                print!(", ");
             }
         }
         println!(" ]");

@@ -1,4 +1,5 @@
 use std::mem::ManuallyDrop;
+use std::ptr;
 use std::{any::Any, fmt, rc::Rc};
 
 use crate::common::ValueType;
@@ -11,11 +12,6 @@ pub union InnerValue {
     obj: ManuallyDrop<Rc<Obj>>,
 }
 
-impl Drop for InnerValue {
-    fn drop(&mut self) {
-        unsafe { ManuallyDrop::drop(&mut self.obj) }
-    }
-}
 pub struct Value {
     pub value_type: ValueType,
     pub value: InnerValue,
@@ -66,6 +62,14 @@ impl Clone for Value {
     }
 }
 
+impl Drop for Value {
+    fn drop(&mut self) {
+        if self.is_obj() {
+            unsafe { ManuallyDrop::drop(&mut self.value.obj) }
+        }
+    }
+}
+
 impl Value {
     pub fn new_bool(val: bool) -> Self {
         Value {
@@ -88,11 +92,11 @@ impl Value {
         }
     }
 
-    pub fn new_obj(obj: Obj) -> Self {
+    pub fn new_obj(obj: Rc<Obj>) -> Self {
         Value {
             value_type: ValueType::ValObj,
             value: InnerValue {
-                obj: ManuallyDrop::new(Rc::new(obj)),
+                obj: ManuallyDrop::new(obj),
             },
         }
     }
@@ -162,7 +166,13 @@ impl Value {
             }
             ValueType::ValNil => print!("nil"),
             ValueType::ValNumber => print!("{}", self.as_number()),
-            ValueType::ValObj => todo!(),
+            ValueType::ValObj => self.print_object(),
+        }
+    }
+
+    pub fn print_object(&self) {
+        match self.obj_type() {
+            ObjType::ObjString => print!("{}", self.as_rust_string()),
         }
     }
 
@@ -175,24 +185,17 @@ impl Value {
             ValueType::ValBool => self.as_bool() == other.as_bool(),
             ValueType::ValNil => true,
             ValueType::ValNumber => self.as_number() == other.as_number(),
-            _ => false,
-        }
-    }
-}
+            ValueType::ValObj => {
+                let a_obj = self.as_obj();
+                let b_obj = other.as_obj();
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.value_type {
-            ValueType::ValBool => {
-                if self.as_bool() {
-                    write!(f, "true")
+                if a_obj.obj_type == ObjType::ObjString {
+                    return self.as_rust_string() == other.as_rust_string();
                 } else {
-                    write!(f, "false")
+                    return ptr::eq(a_obj.as_ref(), b_obj.as_ref());
                 }
             }
-            ValueType::ValNil => write!(f, "nil"),
-            ValueType::ValNumber => write!(f, "{}", self.as_number()),
-            ValueType::ValObj => todo!(),
+            _ => false,
         }
     }
 }
@@ -203,8 +206,8 @@ pub struct ValueArray {
 }
 
 impl ValueArray {
-    pub fn write_value_array(&mut self, value: Value) {
-        self.values.push(value);
+    pub fn write_value_array(&mut self, value: &Value) {
+        self.values.push(value.clone());
     }
 
     pub fn free_value_array(&mut self) {
