@@ -1,6 +1,6 @@
 use std::mem::ManuallyDrop;
 use std::ptr;
-use std::{any::Any, fmt, rc::Rc};
+use std::{rc::Rc};
 
 use crate::common::ValueType;
 use crate::object::{Obj, ObjString, ObjType};
@@ -195,7 +195,6 @@ impl Value {
                     return ptr::eq(a_obj.as_ref(), b_obj.as_ref());
                 }
             }
-            _ => false,
         }
     }
 }
