@@ -1,10 +1,10 @@
 use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
-    chunk::{self, Chunk},
-    common::{opcode_from_u8, OpCode, Result},
+    chunk::{Chunk},
+    common::{opcode_from_u8, OpCode},
     compiler, debug,
-    utils::stack::{self, Stack},
+    utils::stack::{Stack},
     value::Value,
 };
 
