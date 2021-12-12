@@ -1,10 +1,13 @@
+use std::rc::Rc;
+
 use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
-    chunk::{Chunk},
+    chunk::Chunk,
     common::{opcode_from_u8, OpCode},
     compiler, debug,
-    utils::stack::{Stack},
+    object::{Obj, ObjString, ObjType},
+    utils::stack::Stack,
     value::Value,
 };
 
@@ -115,12 +118,14 @@ impl<'a> VM<'a> {
                     self.binary_op(|a, b| Value::new_bool(a.as_number() < b.as_number()));
                 }
                 OpCode::OpAdd => {
-                    if !self.peek(0).is_number() || !self.peek(1).is_number() {
+                    if self.peek(0).is_string() && self.peek(1).is_string() {
+                        self.concatenate()
+                    } else if self.peek(0).is_number() && self.peek(1).is_number() {
+                        self.binary_op(|a, b| Value::new_number(a.as_number() + b.as_number()));
+                    } else {
                         self.runtime_error("Operands must be numbers.".to_string());
                         return InterpretResult::InterpretRuntimeError;
                     }
-
-                    self.binary_op(|a, b| Value::new_number(a.as_number() + b.as_number()));
                 }
                 OpCode::OpSubstract => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
@@ -185,6 +190,19 @@ impl<'a> VM<'a> {
 
     fn peek(&self, distance: usize) -> &Value {
         self.stack.peek(distance)
+    }
+
+    fn concatenate(&mut self) {
+        let b = self.stack.pop().unwrap().as_rust_string();
+        let a = self.stack.pop().unwrap().as_rust_string();
+
+        let p: Rc<dyn Obj> = Rc::new(ObjString {
+            obj_type: ObjType::ObjString,
+            string: format!("{}{}", a, b),
+        });
+        let value = Value::new_obj(p);
+
+        self.stack.push(value.clone());
     }
 
     fn runtime_error(&self, message: String) {

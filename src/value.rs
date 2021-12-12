@@ -115,9 +115,7 @@ impl Value {
     }
 
     pub fn as_obj(&self) -> Rc<dyn Obj> {
-        unsafe {
-            Rc::clone(&self.value.obj.deref())
-        }
+        unsafe { Rc::clone(&self.value.obj.deref()) }
     }
 
     pub fn as_string(&self) -> ObjString {
@@ -147,6 +145,10 @@ impl Value {
 
     pub fn is_falsey(&self) -> bool {
         self.is_nil() || (self.is_bool() && !self.as_bool())
+    }
+
+    pub fn is_string(&self) -> bool {
+        self.is_obj_type(ObjType::ObjString)
     }
 
     pub fn obj_type(&self) -> ObjType {
