@@ -172,6 +172,14 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenIdentifier,
+                    ParseRule {
+                        prefix: Some(|parser: &mut Parser<'_>| Parser::variable(parser)),
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
                     TokenType::TokenString,
                     ParseRule {
                         prefix: Some(|parser: &mut Parser<'_>| Parser::string(parser)),
@@ -357,6 +365,24 @@ impl<'a> Parser<'a> {
         self.emit_constant(&value);
     }
 
+    fn variable(&mut self) {
+        let prev = self.previous.to_owned();
+        self.named_variable(&prev);
+    }
+
+    fn named_variable(&mut self, name: &Token) {
+        let arg = self.identifier_constant(name);
+
+        if arg < 256 {
+            self.emit_bytes(OpCode::OpGetGlobal as u8, arg as u8);
+        } else {
+            self.emit_byte(OpCode::OpGetGlobalLong as u8);
+            self.emit_byte((arg & 0xff) as u8);
+            self.emit_byte(((arg >> 8) & 0xff) as u8);
+            self.emit_byte(((arg >> 16) & 0xff) as u8);
+        }
+    }
+
     fn unary(&mut self) {
         let operator_type = self.previous.token_type;
 
@@ -389,12 +415,52 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn define_variable(&mut self, global: i32) {
+        if global < 256 {
+            self.emit_bytes(OpCode::OpDefineGlobal as u8, global as u8);
+        } else {
+            self.emit_byte(OpCode::OpDefineGlobalLong as u8);
+            self.emit_byte((global & 0xff) as u8);
+            self.emit_byte(((global >> 8) & 0xff) as u8);
+            self.emit_byte(((global >> 16) & 0xff) as u8);
+        }
+    }
+
+    fn parse_valriable(&mut self, error_message: String) -> i32 {
+        self.consume(TokenType::TokenIdentifier, error_message);
+        let prev = &self.previous.clone();
+        return self.identifier_constant(prev);
+    }
+
+    fn identifier_constant(&mut self, name: &Token) -> i32 {
+        self.current_chunk()
+            .add_constant(&Value::new_obj(Rc::new(ObjString::new(
+                name.lexeme.to_owned(),
+            ))))
+    }
+
     fn get_rule(&self, token_type: TokenType) -> &ParseRule {
         &self.parse_rule[&token_type]
     }
 
     fn expression(&mut self) {
         self.parse_precedence(Precedence::PrecAssignment);
+    }
+
+    fn var_declaration(&mut self) {
+        let global = self.parse_valriable("Expect variable name.".to_string());
+
+        if self.match_token_type(TokenType::TokenEqual) {
+            self.expression();
+        } else {
+            self.emit_byte(OpCode::OpNil as u8)
+        }
+        self.consume(
+            TokenType::TokenSemicolon,
+            "Expect ';' after variable declaration.".to_string(),
+        );
+
+        self.define_variable(global);
     }
 
     fn expression_statement(&mut self) {
@@ -442,11 +508,11 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&mut self) {
-        // if self.match_token_type(TokenType::TokenVar) {
-        //     self.var_declaration();
-        // } else {
-        self.statement();
-        // }
+        if self.match_token_type(TokenType::TokenVar) {
+            self.var_declaration();
+        } else {
+            self.statement();
+        }
 
         if self.panic_mode {
             self.synchronize();

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 use byteorder::{ByteOrder, LittleEndian};
 
@@ -25,6 +25,7 @@ pub struct VM<'a> {
     pub ip: &'a u8,
 
     pub stack: Stack,
+    pub globals: HashMap<String, Value>,
 }
 
 pub fn interpret(source: &String) -> InterpretResult {
@@ -38,6 +39,7 @@ pub fn interpret(source: &String) -> InterpretResult {
         chunk: &chunk,
         ip: &chunk.code[0],
         stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+        globals: HashMap::new(),
     };
 
     // self.chunk = &chunk;
@@ -94,6 +96,42 @@ impl<'a> VM<'a> {
                     self.stack.push(Value::new_bool(false));
                 }
                 OpCode::OpPop => {
+                    self.stack.pop();
+                }
+                OpCode::OpGetGlobal => {
+                    let name = self.read_constant().as_rust_string();
+                    let value = match self.globals.get(&name) {
+                        Some(val) => val,
+                        None => {
+                            self.runtime_error(format!("Undefined variable '{}'.", name));
+                            return InterpretResult::InterpretRuntimeError;
+                        }
+                    };
+
+                    self.stack.push(value.clone());
+                }
+                OpCode::OpGetGlobalLong => {
+                    let name = self.read_long_constant().as_rust_string();
+                    let value = match self.globals.get(&name) {
+                        Some(val) => val,
+                        None => {
+                            self.runtime_error(format!("Undefined variable '{}'.", name));
+                            return InterpretResult::InterpretRuntimeError;
+                        }
+                    };
+
+                    self.stack.push(value.clone());
+                }
+                OpCode::OpDefineGlobal => {
+                    let name = self.read_constant().as_rust_string();
+                    self.globals.insert(name.to_owned(), self.peek(0).clone());
+
+                    self.stack.pop();
+                }
+                OpCode::OpDefineGlobalLong => {
+                    let name = self.read_long_constant().as_rust_string();
+                    self.globals.insert(name.to_owned(), self.peek(0).clone());
+
                     self.stack.pop();
                 }
                 OpCode::OpEqual => {
@@ -196,8 +234,7 @@ impl<'a> VM<'a> {
         let b = self.stack.pop().unwrap().as_rust_string();
         let a = self.stack.pop().unwrap().as_rust_string();
 
-        let p: Rc<dyn Obj> = Rc::new(ObjString::new(format!("{}{}", a, b)));
-        let value = Value::new_obj(p);
+        let value = Value::new_obj(Rc::new(ObjString::new(format!("{}{}", a, b))));
 
         self.stack.push(value.clone());
     }

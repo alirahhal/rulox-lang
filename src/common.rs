@@ -24,6 +24,10 @@ pub enum OpCode {
     OpLess,
     OpPrint,
     OpPop,
+    OpDefineGlobal,
+    OpDefineGlobalLong,
+    OpGetGlobal,
+    OpGetGlobalLong,
 
     Unknown,
 }
@@ -53,6 +57,10 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         14 => Some(OpCode::OpLess),
         15 => Some(OpCode::OpPrint),
         16 => Some(OpCode::OpPop),
+        17 => Some(OpCode::OpDefineGlobal),
+        18 => Some(OpCode::OpDefineGlobalLong),
+        19 => Some(OpCode::OpGetGlobal),
+        20 => Some(OpCode::OpGetGlobalLong),
 
         _ => None,
     }
