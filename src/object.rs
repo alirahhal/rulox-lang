@@ -14,6 +14,15 @@ pub struct ObjString {
     pub string: String,
 }
 
+impl ObjString {
+    pub fn new(str: String) -> Self {
+        ObjString {
+            obj_type: ObjType::ObjString,
+            string: str,
+        }
+    }
+}
+
 impl Obj for ObjString {
     fn obj_type(&self) -> ObjType {
         self.obj_type

@@ -349,10 +349,9 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self) {
         let slen = self.previous.lexeme.len();
-        let p: Rc<dyn Obj> = Rc::new(ObjString {
-            obj_type: ObjType::ObjString,
-            string: self.previous.lexeme[1..slen - 1].to_string(),
-        });
+        let p: Rc<dyn Obj> = Rc::new(ObjString::new(
+            self.previous.lexeme[1..slen - 1].to_string(),
+        ));
         let value = Value::new_obj(p);
 
         self.emit_constant(&value);
@@ -443,7 +442,11 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&mut self) {
+        // if self.match_token_type(TokenType::TokenVar) {
+        //     self.var_declaration();
+        // } else {
         self.statement();
+        // }
 
         if self.panic_mode {
             self.synchronize();

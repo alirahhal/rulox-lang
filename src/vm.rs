@@ -196,10 +196,7 @@ impl<'a> VM<'a> {
         let b = self.stack.pop().unwrap().as_rust_string();
         let a = self.stack.pop().unwrap().as_rust_string();
 
-        let p: Rc<dyn Obj> = Rc::new(ObjString {
-            obj_type: ObjType::ObjString,
-            string: format!("{}{}", a, b),
-        });
+        let p: Rc<dyn Obj> = Rc::new(ObjString::new(format!("{}{}", a, b)));
         let value = Value::new_obj(p);
 
         self.stack.push(value.clone());
