@@ -43,6 +43,12 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpDefineGlobalLong => {
             return long_constant_instruction(String::from("OP_DEFINE_GLOBAL_LONG"), chunk, offset)
         }
+        OpCode::OpSetGlobal => {
+            return constant_instruction(String::from("OP_SET_GLOBAL"), chunk, offset)
+        }
+        OpCode::OpSetGlobalLong => {
+            return long_constant_instruction(String::from("OP_SET_GLOBAL_LONG"), chunk, offset)
+        }
         OpCode::OpEqual => return simple_instruction(String::from("OP_EQUAL"), offset),
         OpCode::OpGreater => return simple_instruction(String::from("OP_GREATER"), offset),
         OpCode::OpLess => return simple_instruction(String::from("OP_LESS"), offset),

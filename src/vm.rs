@@ -134,6 +134,24 @@ impl<'a> VM<'a> {
 
                     self.stack.pop();
                 }
+                OpCode::OpSetGlobal => {
+                    let name = self.read_constant().as_rust_string();
+                    if !self.globals.contains_key(&name) {
+                        self.runtime_error(format!("Undefined variable '{}'.", name));
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.globals.insert(name, self.peek(0).clone());
+                }
+                OpCode::OpSetGlobalLong => {
+                    let name = self.read_long_constant().as_rust_string();
+                    if !self.globals.contains_key(&name) {
+                        self.runtime_error(format!("Undefined variable '{}'.", name));
+                        return InterpretResult::InterpretRuntimeError;
+                    }
+
+                    self.globals.insert(name, self.peek(0).clone());
+                }
                 OpCode::OpEqual => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();

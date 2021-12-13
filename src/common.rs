@@ -28,6 +28,8 @@ pub enum OpCode {
     OpDefineGlobalLong,
     OpGetGlobal,
     OpGetGlobalLong,
+    OpSetGlobal,
+    OpSetGlobalLong,
 
     Unknown,
 }
@@ -61,6 +63,8 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         18 => Some(OpCode::OpDefineGlobalLong),
         19 => Some(OpCode::OpGetGlobal),
         20 => Some(OpCode::OpGetGlobalLong),
+        21 => Some(OpCode::OpSetGlobal),
+        22 => Some(OpCode::OpSetGlobalLong),
 
         _ => None,
     }
