@@ -19,6 +19,14 @@ impl Stack {
         self.stack.push(value)
     }
 
+    pub fn get_at(&self, index: usize) -> &Value {
+        &self.stack[index]
+    }
+
+    pub fn set_at(&mut self, index: usize, value: Value) {
+        self.stack[index] = value;
+    }
+
     pub fn pop(&mut self) -> Option<Value> {
         self.stack.pop()
     }

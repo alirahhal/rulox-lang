@@ -32,6 +32,42 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
+pub struct Compiler {
+    pub locals: Vec<Local>,
+    pub scope_depth: i32,
+}
+
+pub struct Local {
+    pub name: Token,
+    pub depth: i32,
+}
+
+impl Compiler {
+    pub fn new() -> Self {
+        Compiler {
+            scope_depth: 0,
+            locals: Vec::new(),
+        }
+    }
+
+    pub fn add_local(&mut self, name: &Token) {
+        let local = Local {
+            name: name.clone(),
+            depth: -1,
+        };
+        self.locals.push(local);
+    }
+
+    pub fn local_at(&self, index: usize) -> &Local {
+        let local = &self.locals[index];
+        local
+    }
+
+    pub fn update_local_depth_at(&mut self, index: usize, depth: i32) {
+        self.locals[index].depth = depth;
+    }
+}
+
 pub struct Parser<'a> {
     pub current: Token,
     pub previous: Token,
@@ -41,6 +77,7 @@ pub struct Parser<'a> {
 
     pub scanner: &'a mut Scanner<'a>,
     pub chunk: &'a mut Chunk,
+    pub current_compiler: Compiler,
 }
 
 impl<'a> Parser<'a> {
@@ -62,7 +99,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenLeftParen,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::grouping(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::grouping(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -76,10 +115,30 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenLeftBrace,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
+                    TokenType::TokenRightBrace,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
                     TokenType::TokenMinus,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::unary(parser, can_assign)),
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::unary(parser, can_assign)
+                        }),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecTerm,
                     },
                 ),
@@ -87,7 +146,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenPlus,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecTerm,
                     },
                 ),
@@ -103,7 +164,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenSlash,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecFactor,
                     },
                 ),
@@ -111,14 +174,18 @@ impl<'a> Parser<'a> {
                     TokenType::TokenStar,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecFactor,
                     },
                 ),
                 (
                     TokenType::TokenBang,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::unary(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::unary(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -127,7 +194,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenBangEqual,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecEquality,
                     },
                 ),
@@ -135,7 +204,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenEqualEqual,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecEquality,
                     },
                 ),
@@ -143,7 +214,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenGreater,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecComparison,
                     },
                 ),
@@ -151,7 +224,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenGreaterEqual,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecComparison,
                     },
                 ),
@@ -159,7 +234,9 @@ impl<'a> Parser<'a> {
                     TokenType::TokenLess,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecComparison,
                     },
                 ),
@@ -167,14 +244,18 @@ impl<'a> Parser<'a> {
                     TokenType::TokenLessEqual,
                     ParseRule {
                         prefix: None,
-                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::binary(parser, can_assign)),
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::binary(parser, can_assign)
+                        }),
                         precedence: Precedence::PrecComparison,
                     },
                 ),
                 (
                     TokenType::TokenIdentifier,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::variable(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::variable(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -182,7 +263,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenString,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::string(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::string(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -190,7 +273,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenNumber,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::number(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::number(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -198,7 +283,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenFalse,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::literal(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::literal(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -206,7 +293,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenTrue,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::literal(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::literal(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -214,7 +303,9 @@ impl<'a> Parser<'a> {
                 (
                     TokenType::TokenNil,
                     ParseRule {
-                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| Parser::literal(parser, can_assign)),
+                        prefix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::literal(parser, can_assign)
+                        }),
                         infix: None,
                         precedence: Precedence::PrecNone,
                     },
@@ -247,6 +338,7 @@ impl<'a> Parser<'a> {
 
             scanner,
             chunk,
+            current_compiler: Compiler::new(),
         }
     }
 
@@ -307,6 +399,25 @@ impl<'a> Parser<'a> {
         self.emit_return();
         if !self.had_error {
             disassemble_chunk(self.current_chunk(), "code".to_string());
+        }
+    }
+
+    fn begin_scope(&mut self) {
+        self.current_compiler.scope_depth = self.current_compiler.scope_depth + 1;
+    }
+
+    fn end_scope(&mut self) {
+        self.current_compiler.scope_depth = self.current_compiler.scope_depth - 1;
+
+        while self.current_compiler.locals.len() > 0
+            && self
+                .current_compiler
+                .local_at(self.current_compiler.locals.len() - 1)
+                .depth
+                > self.current_compiler.scope_depth
+        {
+            self.emit_byte(OpCode::OpPop as u8);
+            self.current_compiler.locals.pop();
         }
     }
 
@@ -379,23 +490,40 @@ impl<'a> Parser<'a> {
     }
 
     fn named_variable(&mut self, name: &Token, can_assign: bool) {
-        let arg = self.identifier_constant(name);
+        let get_op: OpCode;
+        let set_op: OpCode;
+        let get_op_long: OpCode;
+        let set_op_long: OpCode;
+        let mut arg = self.resolve_local(name);
+
+        if arg != -1 {
+            get_op = OpCode::OpGetLocal;
+            set_op = OpCode::OpSetLocal;
+            get_op_long = OpCode::OpGetLocalLong;
+            set_op_long = OpCode::OpSetLocalLong;
+        } else {
+            arg = self.identifier_constant(name);
+            get_op = OpCode::OpGetGlobal;
+            set_op = OpCode::OpSetGlobal;
+            get_op_long = OpCode::OpGetGlobalLong;
+            set_op_long = OpCode::OpSetGlobalLong;
+        }
 
         if can_assign && self.match_token_type(TokenType::TokenEqual) {
             self.expression();
             if arg < 256 {
-                self.emit_bytes(OpCode::OpSetGlobal as u8, arg as u8);
+                self.emit_bytes(set_op as u8, arg as u8);
             } else {
-                self.emit_byte(OpCode::OpSetGlobalLong as u8);
+                self.emit_byte(set_op_long as u8);
                 self.emit_byte((arg & 0xff) as u8);
                 self.emit_byte(((arg >> 8) & 0xff) as u8);
                 self.emit_byte(((arg >> 16) & 0xff) as u8);
             }
         } else {
             if arg < 256 {
-                self.emit_bytes(OpCode::OpGetGlobal as u8, arg as u8);
+                self.emit_bytes(get_op as u8, arg as u8);
             } else {
-                self.emit_byte(OpCode::OpGetGlobalLong as u8);
+                self.emit_byte(get_op_long as u8);
                 self.emit_byte((arg & 0xff) as u8);
                 self.emit_byte(((arg >> 8) & 0xff) as u8);
                 self.emit_byte(((arg >> 16) & 0xff) as u8);
@@ -426,7 +554,7 @@ impl<'a> Parser<'a> {
             }
         };
 
-        let can_assign = precedence as u8 <= Precedence::PrecAssignment as u8;       
+        let can_assign = precedence as u8 <= Precedence::PrecAssignment as u8;
         prefix_rule_fn(self, can_assign);
 
         while precedence as u8 <= self.get_rule(self.current.token_type).precedence as u8 {
@@ -441,6 +569,10 @@ impl<'a> Parser<'a> {
     }
 
     fn define_variable(&mut self, global: i32) {
+        if self.current_compiler.scope_depth > 0 {
+            self.mark_initialized();
+            return;
+        }
         if global < 256 {
             self.emit_bytes(OpCode::OpDefineGlobal as u8, global as u8);
         } else {
@@ -451,10 +583,23 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_valriable(&mut self, error_message: String) -> i32 {
+    fn parse_variable(&mut self, error_message: String) -> i32 {
         self.consume(TokenType::TokenIdentifier, error_message);
+
+        self.declare_variable();
+        if self.current_compiler.scope_depth > 0 {
+            return 0;
+        }
+
         let prev = &self.previous.clone();
         return self.identifier_constant(prev);
+    }
+
+    fn mark_initialized(&mut self) {
+        self.current_compiler.update_local_depth_at(
+            self.current_compiler.locals.len() - 1,
+            self.current_compiler.scope_depth,
+        );
     }
 
     fn identifier_constant(&mut self, name: &Token) -> i32 {
@@ -462,6 +607,50 @@ impl<'a> Parser<'a> {
             .add_constant(&Value::new_obj(Rc::new(ObjString::new(
                 name.lexeme.to_owned(),
             ))))
+    }
+
+    fn resolve_local(&mut self, name: &Token) -> i32 {
+        let mut i = self.current_compiler.locals.len() as i32 - 1;
+        while i >= 0 {
+            let local = self.current_compiler.local_at(i as usize);
+            if name.lexeme == local.name.lexeme {
+                if local.depth == -1 {
+                    self.error("Can't read local variable in its own initializer.".to_string());
+                }
+                return i;
+            }
+
+            i = i - 1;
+        }
+
+        return -1;
+    }
+
+    fn declare_variable(&mut self) {
+        if self.current_compiler.scope_depth == 0 {
+            return;
+        }
+
+        let mut error_flagged: bool = false;
+        let name = &self.previous;
+        let mut i = self.current_compiler.locals.len() as i32 - 1;
+        while i >= 0 {
+            let local = self.current_compiler.local_at(i as usize);
+            if local.depth != -1 && local.depth < self.current_compiler.scope_depth {
+                break;
+            }
+
+            i = i - 1;
+            if name.lexeme == local.name.lexeme {
+                error_flagged = true;
+                break;
+            }
+        }
+        if !error_flagged {
+            self.current_compiler.add_local(name);
+        } else {
+            self.error("Already a variable with this name in this scope.".to_string());
+        }
     }
 
     fn get_rule(&self, token_type: TokenType) -> &ParseRule {
@@ -472,8 +661,19 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::PrecAssignment);
     }
 
+    fn block(&mut self) {
+        while !self.check(TokenType::TokenRightBrace) && !self.check(TokenType::TokenEof) {
+            self.declaration();
+        }
+
+        self.consume(
+            TokenType::TokenRightBrace,
+            "Expect '}' after block.".to_string(),
+        );
+    }
+
     fn var_declaration(&mut self) {
-        let global = self.parse_valriable("Expect variable name.".to_string());
+        let global = self.parse_variable("Expect variable name.".to_string());
 
         if self.match_token_type(TokenType::TokenEqual) {
             self.expression();
@@ -547,6 +747,10 @@ impl<'a> Parser<'a> {
     fn statement(&mut self) {
         if self.match_token_type(TokenType::TokenPrint) {
             self.print_statement();
+        } else if self.match_token_type(TokenType::TokenLeftBrace) {
+            self.begin_scope();
+            self.block();
+            self.end_scope();
         } else {
             self.expression_statement();
         }

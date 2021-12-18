@@ -31,6 +31,18 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpNil => return simple_instruction(String::from("OP_NIL"), offset),
         OpCode::OpTrue => return simple_instruction(String::from("OP_TRUE"), offset),
         OpCode::OpFalse => return simple_instruction(String::from("OP_FALSE"), offset),
+        OpCode::OpGetLocal => {
+            return byte_instruction(String::from("OP_GET_LOCAL"), chunk, offset);
+        }
+        OpCode::OpGetLocalLong => {
+            return long_byte_instruction(String::from("OP_GET_LOCAL_LONG"), chunk, offset);
+        }
+        OpCode::OpSetLocal => {
+            return byte_instruction(String::from("OP_SET_LOCAL"), chunk, offset);
+        }
+        OpCode::OpSetLocalLong => {
+            return long_byte_instruction(String::from("OP_SET_LOCAL_LONG"), chunk, offset);
+        }
         OpCode::OpGetGlobal => {
             return constant_instruction(String::from("OP_GET_GLOBAL"), chunk, offset)
         }
@@ -88,4 +100,18 @@ fn long_constant_instruction(name: String, chunk: &Chunk, offset: i32) -> i32 {
 fn simple_instruction(name: String, offset: i32) -> i32 {
     print!("{}\n", name);
     offset + 1
+}
+
+fn byte_instruction(name: String, chunk: &Chunk, offset: i32) -> i32 {
+    let slot = chunk.code[(offset + 1) as usize];
+    print!("{} {:#04} '", name, slot);
+    return offset + 2;
+}
+
+fn long_byte_instruction(name: String, chunk: &Chunk, offset: i32) -> i32 {
+    let mut buf = [0 as u8; 4];
+    buf[..3].copy_from_slice(&chunk.code[(offset + 1) as usize..(offset + 4) as usize]);
+    let slot = LittleEndian::read_u32(&buf);
+    print!("{} {:#04} '", name, slot);
+    return offset + 2;
 }

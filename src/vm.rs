@@ -11,7 +11,7 @@ use crate::{
     value::Value,
 };
 
-const DEBUG_TRACE_EXECUTION: bool = true;
+const DEBUG_TRACE_EXECUTION: bool = false;
 const STACK_INITIAL_SIZE: usize = 256;
 
 pub enum InterpretResult {
@@ -98,6 +98,22 @@ impl<'a> VM<'a> {
                 OpCode::OpPop => {
                     self.stack.pop();
                 }
+                OpCode::OpGetLocal => unsafe {
+                    let slot = self.read_byte();
+                    self.stack.push(self.stack.get_at(slot as usize).clone());
+                },
+                OpCode::OpGetLocalLong => unsafe {
+                    let slot = self.read_long();
+                    self.stack.push(self.stack.get_at(slot as usize).clone());
+                },
+                OpCode::OpSetLocal => unsafe {
+                    let slot = self.read_byte();
+                    self.stack.set_at(slot as usize, self.peek(0).clone());
+                },
+                OpCode::OpSetLocalLong => unsafe {
+                    let slot = self.read_long();
+                    self.stack.push(self.stack.get_at(slot as usize).clone());
+                },
                 OpCode::OpGetGlobal => {
                     let name = self.read_constant().as_rust_string();
                     let value = match self.globals.get(&name) {
@@ -268,6 +284,14 @@ impl<'a> VM<'a> {
         self.ip = ptr.offset(1).as_ref().unwrap();
 
         current_byte
+    }
+
+    unsafe fn read_long(&mut self) -> u32 {
+        let mut buf = [0 as u8; 4];
+        for i in 0..3 {
+            buf[i] = self.read_byte();
+        }
+        LittleEndian::read_u32(&buf)
     }
 
     fn read_constant(&mut self) -> Value {
