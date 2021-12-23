@@ -1,6 +1,6 @@
 use crate::chunk::Chunk;
 use crate::common::{opcode_from_u8, OpCode};
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LittleEndian, BigEndian};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     print!("== {} ==\n", name);
@@ -71,6 +71,12 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpNot => return simple_instruction(String::from("OP_NOT"), offset),
         OpCode::OpNegate => return simple_instruction(String::from("OP_NEGATE"), offset),
         OpCode::OpPrint => return simple_instruction(String::from("OP_PRINT"), offset),
+        OpCode::OpJumpIfFalse => {
+            return jump_instruction(String::from("OP_JUMP_IF_FALSE"), 1, chunk, offset)
+        }
+        OpCode::OpJump => {
+            return jump_instruction(String::from("OP_JUMP"), 1, chunk, offset)
+        }
         OpCode::OpPop => return simple_instruction(String::from("OP_POP"), offset),
         _ => {
             println!("Unknown opcode {:?}\n", instruction);
@@ -113,5 +119,18 @@ fn long_byte_instruction(name: String, chunk: &Chunk, offset: i32) -> i32 {
     buf[..3].copy_from_slice(&chunk.code[(offset + 1) as usize..(offset + 4) as usize]);
     let slot = LittleEndian::read_u32(&buf);
     print!("{} {:#04} '", name, slot);
-    return offset + 2;
+    return offset + 4;
+}
+
+fn jump_instruction(name: String, sign: i32, chunk: &Chunk, offset: i32) -> i32 {
+    let mut buf = [0 as u8; 4];
+    buf[..2].copy_from_slice(&chunk.code[(offset + 1) as usize..(offset + 3) as usize]);
+    let jump = BigEndian::read_u16(&buf);
+    print!(
+        "{} {:#04} -> {}\n",
+        name,
+        offset,
+        offset + 3 + sign * (jump as i32)
+    );
+    return offset + 3;
 }

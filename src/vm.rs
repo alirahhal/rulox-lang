@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LittleEndian, BigEndian};
 
 use crate::{
     chunk::Chunk,
@@ -239,6 +239,18 @@ impl<'a> VM<'a> {
                     self.stack.pop().unwrap().print_value();
                     println!();
                 }
+                OpCode::OpJumpIfFalse => unsafe {
+                    let offset = self.read_short();
+                    if self.peek(0).is_falsey() {
+                        let ptr = self.ip as *const u8;
+                        self.ip = ptr.offset(offset as isize).as_ref().unwrap();
+                    }
+                },
+                OpCode::OpJump => unsafe {
+                    let offset = self.read_short();
+                    let ptr = self.ip as *const u8;
+                    self.ip = ptr.offset(offset as isize).as_ref().unwrap();
+                },
                 OpCode::OpReturn => {
                     // Exit interpreter.
                     return InterpretResult::InterpretOk;
@@ -284,6 +296,14 @@ impl<'a> VM<'a> {
         self.ip = ptr.offset(1).as_ref().unwrap();
 
         current_byte
+    }
+
+    unsafe fn read_short(&mut self) -> u16 {
+        let mut buf = [0 as u8; 4];
+        for i in 0..2 {
+            buf[i] = self.read_byte();
+        }
+        BigEndian::read_u16(&buf)
     }
 
     unsafe fn read_long(&mut self) -> u32 {

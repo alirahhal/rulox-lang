@@ -319,6 +319,22 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenIf,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
+                    TokenType::TokenElse,
+                    ParseRule {
+                        prefix: None,
+                        infix: None,
+                        precedence: Precedence::PrecNone,
+                    },
+                ),
+                (
                     TokenType::TokenVar,
                     ParseRule {
                         prefix: None,
@@ -386,6 +402,13 @@ impl<'a> Parser<'a> {
         self.emit_byte(byte2);
     }
 
+    fn emit_jump(&mut self, instruction: u8) -> i32 {
+        self.emit_byte(instruction);
+        self.emit_byte(0xff);
+        self.emit_byte(0xff);
+        (self.current_chunk().code.len() - 2) as i32
+    }
+
     fn emit_return(&mut self) {
         self.emit_byte(OpCode::OpReturn as u8)
     }
@@ -393,6 +416,18 @@ impl<'a> Parser<'a> {
     fn emit_constant(&mut self, value: &Value) {
         let line = self.previous.line;
         self.current_chunk().write_constant(value, line);
+    }
+
+    fn patch_jump(&mut self, offset: i32) {
+        // -2 to adjust for the bytecode for the jump offset itself.
+        let jump = self.current_chunk().code.len() as i32 - offset - 2;
+
+        // if (jump > UINT16_MAX) {
+        // 	error("Too much code to jump over.");
+        //   }
+
+        self.current_chunk().code[offset as usize] = ((jump >> 8) & 0xff) as u8;
+        self.current_chunk().code[(offset + 1) as usize] = (jump & 0xff) as u8;
     }
 
     fn end_compiler(&mut self) {
@@ -697,6 +732,32 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::OpPop as u8);
     }
 
+    fn if_statement(&mut self) {
+        self.consume(
+            TokenType::TokenLeftParen,
+            "Expect '(' after 'if'.".to_string(),
+        );
+        self.expression();
+        self.consume(
+            TokenType::TokenRightParen,
+            "Expect ')' after condition.".to_string(),
+        );
+
+        let then_jump = self.emit_jump(OpCode::OpJumpIfFalse as u8);
+        self.emit_byte(OpCode::OpPop as u8);
+        self.statement();
+
+        let else_jump = self.emit_jump(OpCode::OpJump as u8);
+
+        self.patch_jump(then_jump);
+        self.emit_byte(OpCode::OpPop as u8);
+
+        if self.match_token_type(TokenType::TokenElse) {
+            self.statement();
+        }
+        self.patch_jump(else_jump);
+    }
+
     fn print_statement(&mut self) {
         self.expression();
         self.consume(
@@ -751,6 +812,8 @@ impl<'a> Parser<'a> {
             self.begin_scope();
             self.block();
             self.end_scope();
+        } else if self.match_token_type(TokenType::TokenIf) {
+            self.if_statement();
         } else {
             self.expression_statement();
         }

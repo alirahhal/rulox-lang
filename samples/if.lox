@@ -1,0 +1,13 @@
+print("before");
+
+if (true) {
+    print("inside true");
+}
+
+if (false) {
+    print("didnt reach");
+} else {
+    print("else for didnt reach");
+}
+
+print("after");
