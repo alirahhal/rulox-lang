@@ -1,6 +1,6 @@
 use crate::chunk::Chunk;
 use crate::common::{opcode_from_u8, OpCode};
-use byteorder::{ByteOrder, LittleEndian, BigEndian};
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     print!("== {} ==\n", name);
@@ -74,9 +74,8 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpJumpIfFalse => {
             return jump_instruction(String::from("OP_JUMP_IF_FALSE"), 1, chunk, offset)
         }
-        OpCode::OpJump => {
-            return jump_instruction(String::from("OP_JUMP"), 1, chunk, offset)
-        }
+        OpCode::OpJump => return jump_instruction(String::from("OP_JUMP"), 1, chunk, offset),
+        OpCode::OpLoop => return jump_instruction(String::from("OP_LOOP"), -1, chunk, offset),
         OpCode::OpPop => return simple_instruction(String::from("OP_POP"), offset),
         _ => {
             println!("Unknown opcode {:?}\n", instruction);

@@ -251,6 +251,11 @@ impl<'a> VM<'a> {
                     let ptr = self.ip as *const u8;
                     self.ip = ptr.offset(offset as isize).as_ref().unwrap();
                 },
+                OpCode::OpLoop => unsafe {
+                    let offset = self.read_short();
+                    let ptr = self.ip as *const u8;
+                    self.ip = ptr.offset(-(offset as isize)).as_ref().unwrap();
+                },
                 OpCode::OpReturn => {
                     // Exit interpreter.
                     return InterpretResult::InterpretOk;

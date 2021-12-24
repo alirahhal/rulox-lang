@@ -36,6 +36,7 @@ pub enum OpCode {
     OpSetLocalLong,
     OpJumpIfFalse,
     OpJump,
+    OpLoop,
 
     Unknown,
 }
@@ -77,6 +78,7 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         26 => Some(OpCode::OpSetLocalLong),
         27 => Some(OpCode::OpJumpIfFalse),
         28 => Some(OpCode::OpJump),
+        29 => Some(OpCode::OpLoop),
 
         _ => None,
     }

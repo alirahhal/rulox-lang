@@ -343,6 +343,26 @@ impl<'a> Parser<'a> {
                     },
                 ),
                 (
+                    TokenType::TokenAnd,
+                    ParseRule {
+                        prefix: None,
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::and_(parser, can_assign)
+                        }),
+                        precedence: Precedence::PrecAnd,
+                    },
+                ),
+                (
+                    TokenType::TokenOr,
+                    ParseRule {
+                        prefix: None,
+                        infix: Some(|parser: &mut Parser<'_>, can_assign: bool| {
+                            Parser::or_(parser, can_assign)
+                        }),
+                        precedence: Precedence::PrecOr,
+                    },
+                ),
+                (
                     TokenType::TokenEof,
                     ParseRule {
                         prefix: None,
@@ -400,6 +420,15 @@ impl<'a> Parser<'a> {
     fn emit_bytes(&mut self, byte1: u8, byte2: u8) {
         self.emit_byte(byte1);
         self.emit_byte(byte2);
+    }
+
+    fn emit_loop(&mut self, loop_start: i32) {
+        self.emit_byte(OpCode::OpLoop as u8);
+
+        let offset = self.current_chunk().code.len() as i32 - loop_start + 2;
+
+        self.emit_byte(((offset >> 8) & 0xff) as u8);
+        self.emit_byte((offset & 0xff) as u8);
     }
 
     fn emit_jump(&mut self, instruction: u8) -> i32 {
@@ -509,6 +538,17 @@ impl<'a> Parser<'a> {
         self.emit_constant(&value);
     }
 
+    fn or_(&mut self, _can_assign: bool) {
+        let else_jump = self.emit_jump(OpCode::OpJumpIfFalse as u8);
+        let end_jump = self.emit_jump(OpCode::OpJump as u8);
+
+        self.patch_jump(else_jump);
+        self.emit_byte(OpCode::OpPop as u8);
+
+        self.parse_precedence(Precedence::PrecOr);
+        self.patch_jump(end_jump);
+    }
+
     fn string(&mut self, _can_assign: bool) {
         let slen = self.previous.lexeme.len();
         let p: Rc<dyn Obj> = Rc::new(ObjString::new(
@@ -616,6 +656,15 @@ impl<'a> Parser<'a> {
             self.emit_byte(((global >> 8) & 0xff) as u8);
             self.emit_byte(((global >> 16) & 0xff) as u8);
         }
+    }
+
+    fn and_(&mut self, _can_assign: bool) {
+        let end_jump = self.emit_jump(OpCode::OpJumpIfFalse as u8);
+
+        self.emit_byte(OpCode::OpPop as u8);
+        self.parse_precedence(Precedence::PrecAnd);
+
+        self.patch_jump(end_jump);
     }
 
     fn parse_variable(&mut self, error_message: String) -> i32 {
@@ -732,6 +781,59 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::OpPop as u8);
     }
 
+    fn for_statement(&mut self) {
+        self.begin_scope();
+        self.consume(
+            TokenType::TokenLeftParen,
+            "Expect '(' after 'for'.".to_string(),
+        );
+        if self.match_token_type(TokenType::TokenSemicolon) {
+            // No initializer
+        } else if self.match_token_type(TokenType::TokenVar) {
+            self.var_declaration();
+        } else {
+            self.expression_statement();
+        }
+
+        let mut loop_start = self.current_chunk().code.len() as i32;
+        let mut exit_jump = -1;
+        if !self.match_token_type(TokenType::TokenSemicolon) {
+            self.expression();
+            self.consume(
+                TokenType::TokenSemicolon,
+                "Expect ';' after loop condition.".to_string(),
+            );
+
+            // Jump out of the loop if the condition is false.
+            exit_jump = self.emit_jump(OpCode::OpJumpIfFalse as u8);
+            self.emit_byte(OpCode::OpPop as u8); // Condition.
+        }
+
+        if !self.match_token_type(TokenType::TokenRightParen) {
+            let body_jump = self.emit_jump(OpCode::OpJump as u8);
+            let increment_start = self.current_chunk().code.len() as i32;
+            self.expression();
+            self.emit_byte(OpCode::OpPop as u8);
+            self.consume(
+                TokenType::TokenRightParen,
+                "Expect ')' after for clauses.".to_string(),
+            );
+
+            self.emit_loop(loop_start);
+            loop_start = increment_start;
+            self.patch_jump(body_jump);
+        }
+
+        self.statement();
+        self.emit_loop(loop_start);
+
+        if exit_jump != -1 {
+            self.patch_jump(exit_jump);
+            self.emit_byte(OpCode::OpPop as u8);
+        }
+        self.end_scope();
+    }
+
     fn if_statement(&mut self) {
         self.consume(
             TokenType::TokenLeftParen,
@@ -765,6 +867,27 @@ impl<'a> Parser<'a> {
             "Expect ';' after value.".to_string(),
         );
         self.emit_byte(OpCode::OpPrint as u8);
+    }
+
+    fn while_statement(&mut self) {
+        let loop_start = self.current_chunk().code.len() as i32;
+        self.consume(
+            TokenType::TokenLeftParen,
+            "Expect '(' after 'while'.".to_string(),
+        );
+        self.expression();
+        self.consume(
+            TokenType::TokenRightParen,
+            "Expect ')' after 'while'.".to_string(),
+        );
+
+        let exit_jump = self.emit_jump(OpCode::OpJumpIfFalse as u8);
+        self.emit_byte(OpCode::OpPop as u8);
+        self.statement();
+        self.emit_loop(loop_start);
+
+        self.patch_jump(exit_jump);
+        self.emit_byte(OpCode::OpPop as u8);
     }
 
     fn synchronize(&mut self) {
@@ -814,6 +937,10 @@ impl<'a> Parser<'a> {
             self.end_scope();
         } else if self.match_token_type(TokenType::TokenIf) {
             self.if_statement();
+        } else if self.match_token_type(TokenType::TokenWhile) {
+            self.while_statement();
+        } else if self.match_token_type(TokenType::TokenFor) {
+            self.for_statement();
         } else {
             self.expression_statement();
         }
