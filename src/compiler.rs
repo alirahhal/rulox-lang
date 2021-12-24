@@ -1,10 +1,10 @@
-use std::{array::IntoIter, collections::HashMap, iter::FromIterator, ops::Deref, rc::Rc};
+use std::{array::IntoIter, collections::HashMap, iter::FromIterator, rc::Rc};
 
 use crate::{
     chunk::Chunk,
     common::{precedence_from_u8, OpCode, Precedence, TokenType},
     debug::disassemble_chunk,
-    object::{Obj, ObjString, ObjType},
+    object::{Obj, ObjString},
     scanner::{Scanner, Token},
     value::Value,
 };

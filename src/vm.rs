@@ -6,7 +6,7 @@ use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
     compiler, debug,
-    object::{Obj, ObjString, ObjType},
+    object::{ObjString},
     utils::stack::Stack,
     value::Value,
 };
