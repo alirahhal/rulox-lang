@@ -15,7 +15,7 @@ use std::{
 };
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<_> = env::args().collect();
 
     // let vm = vm::VM::new();
 
@@ -29,7 +29,7 @@ fn main() {
     }
 }
 
-fn run_file(path: &String) {
+fn run_file(path: &str) {
     let source = fs::read_to_string(path).expect("Something went wrong reading the file");
 
     let result = vm::interpret(&source);
