@@ -36,7 +36,7 @@ impl Chunk {
 
     pub fn add_constant(&mut self, value: &Value) -> i32 {
         self.constants.write_value_array(value);
-        return (self.constants.values.len() - 1) as i32;
+        (self.constants.values.len() - 1) as i32
     }
 
     pub fn free_chunk(&mut self) {

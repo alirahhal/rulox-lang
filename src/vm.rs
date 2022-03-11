@@ -1,12 +1,12 @@
 use std::{collections::HashMap, rc::Rc};
 
-use byteorder::{ByteOrder, LittleEndian, BigEndian};
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
     compiler, debug,
-    object::{ObjString},
+    object::ObjString,
     utils::stack::Stack,
     value::Value,
 };
@@ -48,7 +48,7 @@ pub fn interpret(source: &String) -> InterpretResult {
     let result = vm.run();
 
     chunk.free_chunk();
-    return result;
+    result
 }
 
 impl<'a> VM<'a> {
@@ -287,7 +287,7 @@ impl<'a> VM<'a> {
 
         let value = Value::new_obj(Rc::new(ObjString::new(format!("{}{}", a, b))));
 
-        self.stack.push(value.clone());
+        self.stack.push(value);
     }
 
     fn runtime_error(&self, message: String) {
@@ -304,7 +304,7 @@ impl<'a> VM<'a> {
     }
 
     unsafe fn read_short(&mut self) -> u16 {
-        let mut buf = [0 as u8; 4];
+        let mut buf = [0_u8; 4];
         for i in 0..2 {
             buf[i] = self.read_byte();
         }
@@ -312,7 +312,7 @@ impl<'a> VM<'a> {
     }
 
     unsafe fn read_long(&mut self) -> u32 {
-        let mut buf = [0 as u8; 4];
+        let mut buf = [0_u8; 4];
         for i in 0..3 {
             buf[i] = self.read_byte();
         }
@@ -324,7 +324,7 @@ impl<'a> VM<'a> {
     }
 
     fn read_long_constant(&mut self) -> Value {
-        let mut buf = [0 as u8; 4];
+        let mut buf = [0_u8; 4];
         for i in 0..3 {
             unsafe {
                 buf[i] = self.read_byte();

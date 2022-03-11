@@ -22,35 +22,29 @@ impl Clone for Value {
     fn clone(&self) -> Self {
         unsafe {
             match self.value_type {
-                ValueType::ValBool => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            boolean: self.value.boolean,
-                        },
-                    }
-                }
-                ValueType::ValNil => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            number: self.value.number,
-                        },
-                    }
-                }
-                ValueType::ValNumber => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            number: self.value.number,
-                        },
-                    }
-                }
+                ValueType::ValBool => Self {
+                    value_type: self.value_type,
+                    value: InnerValue {
+                        boolean: self.value.boolean,
+                    },
+                },
+                ValueType::ValNil => Self {
+                    value_type: self.value_type,
+                    value: InnerValue {
+                        number: self.value.number,
+                    },
+                },
+                ValueType::ValNumber => Self {
+                    value_type: self.value_type,
+                    value: InnerValue {
+                        number: self.value.number,
+                    },
+                },
                 ValueType::ValObj => {
                     return Self {
                         value_type: self.value_type,
                         value: InnerValue {
-                            obj: ManuallyDrop::new(Rc::clone(&self.value.obj.deref())),
+                            obj: ManuallyDrop::new(Rc::clone(self.value.obj.deref())),
                         },
                     };
                 }
@@ -103,19 +97,15 @@ impl Value {
     }
 
     pub fn as_bool(&self) -> bool {
-        unsafe {
-            return self.value.boolean;
-        }
+        unsafe { self.value.boolean }
     }
 
     pub fn as_number(&self) -> i64 {
-        unsafe {
-            return self.value.number;
-        }
+        unsafe { self.value.number }
     }
 
     pub fn as_obj(&self) -> Rc<dyn Obj> {
-        unsafe { Rc::clone(&self.value.obj.deref()) }
+        unsafe { Rc::clone(self.value.obj.deref()) }
     }
 
     pub fn as_string(&self) -> ObjString {
@@ -124,7 +114,7 @@ impl Value {
     }
 
     pub fn as_rust_string(&self) -> String {
-        self.as_string().string.clone()
+        self.as_string().string
     }
 
     pub fn is_bool(&self) -> bool {
@@ -156,7 +146,7 @@ impl Value {
     }
 
     pub fn is_obj_type(&self, obj_type: ObjType) -> bool {
-        return self.is_obj() && self.obj_type() == obj_type;
+        self.is_obj() && self.obj_type() == obj_type
     }
 
     pub fn print_value(&self) {
@@ -194,7 +184,7 @@ impl Value {
                 let b_obj = other.as_obj();
 
                 if a_obj.obj_type() == ObjType::ObjString {
-                    return self.as_rust_string() == other.as_rust_string();
+                    self.as_rust_string() == other.as_rust_string()
                 } else {
                     return ptr::eq(a_obj.as_ref(), b_obj.as_ref());
                 }

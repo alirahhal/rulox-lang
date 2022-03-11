@@ -59,8 +59,7 @@ impl Compiler {
     }
 
     pub fn local_at(&self, index: usize) -> &Local {
-        let local = &self.locals[index];
-        local
+        &self.locals[index] as _
     }
 
     pub fn update_local_depth_at(&mut self, index: usize, depth: i32) {
@@ -467,13 +466,13 @@ impl<'a> Parser<'a> {
     }
 
     fn begin_scope(&mut self) {
-        self.current_compiler.scope_depth = self.current_compiler.scope_depth + 1;
+        self.current_compiler.scope_depth += 1;
     }
 
     fn end_scope(&mut self) {
-        self.current_compiler.scope_depth = self.current_compiler.scope_depth - 1;
+        self.current_compiler.scope_depth -= 1;
 
-        while self.current_compiler.locals.len() > 0
+        while !self.current_compiler.locals.is_empty()
             && self
                 .current_compiler
                 .local_at(self.current_compiler.locals.len() - 1)
@@ -512,7 +511,7 @@ impl<'a> Parser<'a> {
             TokenType::TokenMinus => self.emit_byte(OpCode::OpSubtract as u8),
             TokenType::TokenStar => self.emit_byte(OpCode::OpMultiply as u8),
             TokenType::TokenSlash => self.emit_byte(OpCode::OpDivide as u8),
-            _ => return,
+            _ => (),
         }
     }
 
@@ -521,7 +520,7 @@ impl<'a> Parser<'a> {
             TokenType::TokenFalse => self.emit_byte(OpCode::OpFalse as u8),
             TokenType::TokenTrue => self.emit_byte(OpCode::OpTrue as u8),
             TokenType::TokenNil => self.emit_byte(OpCode::OpNil as u8),
-            _ => return,
+            _ => (),
         }
     }
 
@@ -594,15 +593,13 @@ impl<'a> Parser<'a> {
                 self.emit_byte(((arg >> 8) & 0xff) as u8);
                 self.emit_byte(((arg >> 16) & 0xff) as u8);
             }
+        } else if arg < 256 {
+            self.emit_bytes(get_op as u8, arg as u8);
         } else {
-            if arg < 256 {
-                self.emit_bytes(get_op as u8, arg as u8);
-            } else {
-                self.emit_byte(get_op_long as u8);
-                self.emit_byte((arg & 0xff) as u8);
-                self.emit_byte(((arg >> 8) & 0xff) as u8);
-                self.emit_byte(((arg >> 16) & 0xff) as u8);
-            }
+            self.emit_byte(get_op_long as u8);
+            self.emit_byte((arg & 0xff) as u8);
+            self.emit_byte(((arg >> 8) & 0xff) as u8);
+            self.emit_byte(((arg >> 16) & 0xff) as u8);
         }
     }
 
@@ -614,7 +611,7 @@ impl<'a> Parser<'a> {
         match operator_type {
             TokenType::TokenBang => self.emit_byte(OpCode::OpNot as u8),
             TokenType::TokenMinus => self.emit_byte(OpCode::OpNegate as u8),
-            _ => return,
+            _ => (),
         }
     }
 
@@ -676,7 +673,7 @@ impl<'a> Parser<'a> {
         }
 
         let prev = &self.previous.clone();
-        return self.identifier_constant(prev);
+        self.identifier_constant(prev)
     }
 
     fn mark_initialized(&mut self) {
@@ -704,10 +701,10 @@ impl<'a> Parser<'a> {
                 return i;
             }
 
-            i = i - 1;
+            i -= 1;
         }
 
-        return -1;
+        -1
     }
 
     fn declare_variable(&mut self) {
@@ -724,7 +721,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            i = i - 1;
+            i -= 1;
             if name.lexeme == local.name.lexeme {
                 error_flagged = true;
                 break;
