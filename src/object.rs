@@ -6,7 +6,7 @@ pub enum ObjType {
 
 pub trait Obj {
     fn obj_type(&self) -> ObjType;
-    fn as_obj_string(&self) -> Option<&ObjString>;
+    fn as_obj_string(&self) -> &ObjString;
 }
 
 pub struct ObjString {
@@ -28,9 +28,10 @@ impl Obj for ObjString {
         self.obj_type
     }
 
-    fn as_obj_string(&self) -> Option<&ObjString> {
+    fn as_obj_string(&self) -> &ObjString {
         match self.obj_type {
-            ObjType::ObjString => Some(self),
+            ObjType::ObjString => self,
+            _ => panic!(),
         }
     }
 }

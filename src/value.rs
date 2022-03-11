@@ -6,135 +6,101 @@ use std::rc::Rc;
 use crate::common::ValueType;
 use crate::object::{Obj, ObjString, ObjType};
 
-#[repr(C)]
-pub union InnerValue {
-    boolean: bool,
-    number: i64,
-    obj: ManuallyDrop<Rc<dyn Obj>>,
-}
+// #[repr(C)]
+// pub union InnerValue {
+//     boolean: bool,
+//     number: i64,
+//     obj: ManuallyDrop<Rc<dyn Obj>>,
+// }
 
-pub struct Value {
-    pub value_type: ValueType,
-    pub value: InnerValue,
-}
-
-impl Clone for Value {
-    fn clone(&self) -> Self {
-        unsafe {
-            match self.value_type {
-                ValueType::ValBool => Self {
-                    value_type: self.value_type,
-                    value: InnerValue {
-                        boolean: self.value.boolean,
-                    },
-                },
-                ValueType::ValNil => Self {
-                    value_type: self.value_type,
-                    value: InnerValue {
-                        number: self.value.number,
-                    },
-                },
-                ValueType::ValNumber => Self {
-                    value_type: self.value_type,
-                    value: InnerValue {
-                        number: self.value.number,
-                    },
-                },
-                ValueType::ValObj => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            obj: ManuallyDrop::new(Rc::clone(self.value.obj.deref())),
-                        },
-                    };
-                }
-            }
-        }
-    }
-
-    fn clone_from(&mut self, source: &Self) {
-        *self = source.clone();
-    }
-}
-
-impl Drop for Value {
-    fn drop(&mut self) {
-        if self.is_obj() {
-            unsafe { ManuallyDrop::drop(&mut self.value.obj) }
-        }
-    }
+pub enum Value {
+    Boolean(bool),
+    Number(i64),
+    // Integer(i32),
+    // Double(f32),
+    Object(Rc<dyn Obj>),
+    Nil,
 }
 
 impl Value {
     pub fn new_bool(val: bool) -> Self {
-        Value {
-            value_type: ValueType::ValBool,
-            value: InnerValue { boolean: val },
-        }
+        Value::Boolean(val)
     }
 
     pub fn new_nil() -> Self {
-        Value {
-            value_type: ValueType::ValNil,
-            value: InnerValue { number: 0 },
-        }
+        Value::Nil
     }
 
     pub fn new_number(val: i64) -> Self {
-        Value {
-            value_type: ValueType::ValNumber,
-            value: InnerValue { number: val },
-        }
+        Value::Number(val)
     }
 
     pub fn new_obj(obj: Rc<dyn Obj>) -> Self {
-        Value {
-            value_type: ValueType::ValObj,
-            value: InnerValue {
-                obj: ManuallyDrop::new(obj),
-            },
-        }
+        Value::Object(obj)
     }
 
     pub fn as_bool(&self) -> bool {
-        unsafe { self.value.boolean }
+        match self {
+            Value::Boolean(v) => *v,
+            _ => panic!(),
+        }
     }
 
     pub fn as_number(&self) -> i64 {
-        unsafe { self.value.number }
+        match self {
+            Value::Number(v) => *v,
+            _ => panic!(),
+        }
     }
 
-    pub fn as_obj(&self) -> Rc<dyn Obj> {
-        unsafe { Rc::clone(self.value.obj.deref()) }
+    pub fn as_obj(&self) -> &Rc<dyn Obj> {
+        match self {
+            Value::Object(r) => r,
+            _ => panic!(),
+        }
     }
 
-    pub fn as_string(&self) -> ObjString {
-        let c = self.as_obj();
-        c.as_obj_string().unwrap().clone()
+    pub fn as_string(&self) -> &ObjString {
+        self.as_obj().deref().as_obj_string()
     }
 
-    pub fn as_rust_string(&self) -> String {
-        self.as_string().string
+    pub fn as_rust_string(&self) -> &str {
+        &self.as_string().string
     }
 
     pub fn is_bool(&self) -> bool {
-        self.value_type == ValueType::ValBool
+        match self {
+            Value::Boolean(_) => true,
+            _ => false,
+        }
     }
 
     pub fn is_nil(&self) -> bool {
-        self.value_type == ValueType::ValNil
+        match self {
+            Value::Nil => true,
+            _ => false,
+        }
     }
 
     pub fn is_number(&self) -> bool {
-        self.value_type == ValueType::ValNumber
+        match self {
+            Value::Number(_) => true,
+            _ => false,
+        }
     }
 
     pub fn is_obj(&self) -> bool {
-        self.value_type == ValueType::ValObj
+        match self {
+            Value::Object(_) => true,
+            _ => false,
+        }
     }
 
     pub fn is_falsey(&self) -> bool {
-        self.is_nil() || (self.is_bool() && !self.as_bool())
+        match self {
+            Value::Boolean(v) => *v,
+            _ => true,
+        }
     }
 
     pub fn is_string(&self) -> bool {
@@ -150,17 +116,17 @@ impl Value {
     }
 
     pub fn print_value(&self) {
-        match self.value_type {
-            ValueType::ValBool => {
-                if self.as_bool() {
+        match self {
+            Value::Boolean(v) => {
+                if *v {
                     print!("true");
                 } else {
                     print!("false");
                 }
             }
-            ValueType::ValNil => print!("nil"),
-            ValueType::ValNumber => print!("{}", self.as_number()),
-            ValueType::ValObj => self.print_object(),
+            Value::Number(v) => print!("{}", *v),
+            Value::Object(_) => self.print_object(),
+            Value::Nil => print!("nil"),
         }
     }
 
@@ -170,23 +136,23 @@ impl Value {
         }
     }
 
-    pub fn values_equal(&self, other: &Value) -> bool {
-        if self.value_type != other.value_type {
+    pub fn values_equal(&self, other: &Self) -> bool {
+        if core::mem::discriminant(self) != core::mem::discriminant(other) {
             return false;
         }
 
-        match self.value_type {
-            ValueType::ValBool => self.as_bool() == other.as_bool(),
-            ValueType::ValNil => true,
-            ValueType::ValNumber => self.as_number() == other.as_number(),
-            ValueType::ValObj => {
-                let a_obj = self.as_obj();
-                let b_obj = other.as_obj();
+        match self {
+            Value::Boolean(_) => self.as_bool() == other.as_bool(),
+            Value::Nil => true,
+            Value::Number(_) => self.as_number() == other.as_number(),
+            Value::Object(_) => {
+                let obj_1 = self.as_obj();
+                let obj_2 = other.as_obj();
 
-                if a_obj.obj_type() == ObjType::ObjString {
+                if obj_1.obj_type() == ObjType::ObjString && obj_2.obj_type() == ObjType::ObjString {
                     self.as_rust_string() == other.as_rust_string()
                 } else {
-                    return ptr::eq(a_obj.as_ref(), b_obj.as_ref());
+                    ptr::eq(obj_1.as_ref(), obj_2.as_ref())
                 }
             }
         }
@@ -199,8 +165,8 @@ pub struct ValueArray {
 }
 
 impl ValueArray {
-    pub fn write_value_array(&mut self, value: &Value) {
-        self.values.push(value.clone());
+    pub fn write_value_array(&mut self, value: Value) {
+        self.values.push(value);
     }
 
     pub fn free_value_array(&mut self) {

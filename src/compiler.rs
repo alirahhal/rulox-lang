@@ -441,7 +441,7 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::OpReturn as u8)
     }
 
-    fn emit_constant(&mut self, value: &Value) {
+    fn emit_constant(&mut self, value: Value) {
         let line = self.previous.line;
         self.current_chunk().write_constant(value, line);
     }
@@ -554,8 +554,7 @@ impl<'a> Parser<'a> {
             self.previous.lexeme[1..slen - 1].to_string(),
         ));
         let value = Value::new_obj(p);
-
-        self.emit_constant(&value);
+        self.emit_constant(value);
     }
 
     fn variable(&mut self, can_assign: bool) {
