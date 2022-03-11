@@ -1,11 +1,8 @@
 [package]
 name = "rulox-lang"
 version = "0.1.0"
-authors = ["Ali Rahhal <arahhal997@gmail.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Ali Rahhal <arahhal997@gmail.com>", "Mohammad Rahhal <m.r992@gmail.com>"]
+edition = "2021"
 
 [dependencies]
 byteorder = "1.4.3"
-derivative = "2.2.0"

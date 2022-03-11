@@ -65,7 +65,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         OpCode::OpGreater => return simple_instruction(String::from("OP_GREATER"), offset),
         OpCode::OpLess => return simple_instruction(String::from("OP_LESS"), offset),
         OpCode::OpAdd => return simple_instruction(String::from("OP_ADD"), offset),
-        OpCode::OpSubstract => return simple_instruction(String::from("OP_SUBTRACT"), offset),
+        OpCode::OpSubtract => return simple_instruction(String::from("OP_SUBTRACT"), offset),
         OpCode::OpMultiply => return simple_instruction(String::from("OP_MULTIPLY"), offset),
         OpCode::OpDivide => return simple_instruction(String::from("OP_DIVIDE"), offset),
         OpCode::OpNot => return simple_instruction(String::from("OP_NOT"), offset),

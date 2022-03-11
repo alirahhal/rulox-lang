@@ -1,9 +1,3 @@
-use std::error;
-
-use derivative::*; // 2.2.0
-
-pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
-
 #[repr(u8)]
 #[derive(Debug, PartialEq)]
 pub enum OpCode {
@@ -11,7 +5,7 @@ pub enum OpCode {
     OpConstant,
     OpConstantLong,
     OpAdd,
-    OpSubstract,
+    OpSubtract,
     OpMultiply,
     OpDivide,
     OpNegate,
@@ -53,7 +47,7 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
         1 => Some(OpCode::OpConstant),
         2 => Some(OpCode::OpConstantLong),
         3 => Some(OpCode::OpAdd),
-        4 => Some(OpCode::OpSubstract),
+        4 => Some(OpCode::OpSubtract),
         5 => Some(OpCode::OpMultiply),
         6 => Some(OpCode::OpDivide),
         7 => Some(OpCode::OpNegate),
@@ -85,8 +79,7 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
 }
 
 #[repr(u8)]
-#[derive(Debug, Eq, Derivative, Copy, Clone)]
-#[derivative(PartialEq, Hash)]
+#[derive(Debug, Eq, Copy, Clone, PartialEq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
     TokenLeftParen,

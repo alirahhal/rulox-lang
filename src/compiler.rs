@@ -509,7 +509,7 @@ impl<'a> Parser<'a> {
                 self.emit_bytes(OpCode::OpGreater as u8, OpCode::OpNot as u8)
             }
             TokenType::TokenPlus => self.emit_byte(OpCode::OpAdd as u8),
-            TokenType::TokenMinus => self.emit_byte(OpCode::OpSubstract as u8),
+            TokenType::TokenMinus => self.emit_byte(OpCode::OpSubtract as u8),
             TokenType::TokenStar => self.emit_byte(OpCode::OpMultiply as u8),
             TokenType::TokenSlash => self.emit_byte(OpCode::OpDivide as u8),
             _ => return,

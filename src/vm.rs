@@ -199,7 +199,7 @@ impl<'a> VM<'a> {
                         return InterpretResult::InterpretRuntimeError;
                     }
                 }
-                OpCode::OpSubstract => {
+                OpCode::OpSubtract => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
                         return InterpretResult::InterpretRuntimeError;

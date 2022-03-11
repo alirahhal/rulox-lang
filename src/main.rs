@@ -2,11 +2,11 @@ mod chunk;
 mod common;
 mod compiler;
 mod debug;
+mod object;
 mod scanner;
 mod utils;
 mod value;
 mod vm;
-mod object;
 
 use std::{
     env, fs,

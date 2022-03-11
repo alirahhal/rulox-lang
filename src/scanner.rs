@@ -324,7 +324,7 @@ mod tests {
         assert_eq!(
             t.token_type,
             TokenType::TokenLeftBrace,
-            "Expected to remove leading whitespaces"
+            "Expected to remove leading whitespace",
         );
     }
 
