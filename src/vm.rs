@@ -97,19 +97,19 @@ impl<'a> VM<'a> {
                 OpCode::OpGetLocal => {
                     let slot = self.read_byte();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
-                },
+                }
                 OpCode::OpGetLocalLong => {
                     let slot = self.read_long();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
-                },
+                }
                 OpCode::OpSetLocal => {
                     let slot = self.read_byte();
                     self.stack.set_at(slot as usize, self.peek(0).clone());
-                },
+                }
                 OpCode::OpSetLocalLong => {
                     let slot = self.read_long();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
-                },
+                }
                 OpCode::OpGetGlobal => {
                     let v = self.read_constant();
                     let name = v.as_string();
@@ -239,30 +239,28 @@ impl<'a> VM<'a> {
                     self.stack.pop().unwrap().print_value();
                     println!();
                 }
-                OpCode::OpJumpIfFalse => unsafe {
+                OpCode::OpJumpIfFalse => {
                     let offset = self.read_short();
                     if self.peek(0).is_falsey() {
                         let ptr = self.ip as *const u8;
-                        self.ip = ptr.offset(offset as isize).as_ref().unwrap();
+                        self.ip = unsafe { ptr.offset(offset as isize).as_ref().unwrap() };
                     }
-                },
-                OpCode::OpJump => unsafe {
+                }
+                OpCode::OpJump => {
                     let offset = self.read_short();
                     let ptr = self.ip as *const u8;
-                    self.ip = ptr.offset(offset as isize).as_ref().unwrap();
-                },
-                OpCode::OpLoop => unsafe {
+                    self.ip = unsafe { ptr.offset(offset as isize).as_ref().unwrap() };
+                }
+                OpCode::OpLoop => {
                     let offset = self.read_short();
                     let ptr = self.ip as *const u8;
-                    self.ip = ptr.offset(-(offset as isize)).as_ref().unwrap();
-                },
+                    self.ip = unsafe { ptr.offset(-(offset as isize)).as_ref().unwrap() };
+                }
                 OpCode::OpReturn => {
                     // Exit interpreter.
                     return InterpretResult::InterpretOk;
                 }
-                _ => {
-                    panic!("Unknown opcode {:?}\n", instruction);
-                }
+                _ => panic!("Unknown opcode {:?}\n", instruction),
             }
         }
     }
