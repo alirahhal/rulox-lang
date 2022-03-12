@@ -163,15 +163,6 @@ pub enum Precedence {
     Factor,     // * /
     Unary,      // ! -
     Call,       // . ()
-    Primary,
-
-    Unknown,
-}
-
-impl Default for Precedence {
-    fn default() -> Self {
-        Precedence::Unknown
-    }
 }
 
 pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
@@ -186,7 +177,6 @@ pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
         7 => Some(Precedence::Factor),
         8 => Some(Precedence::Unary),
         9 => Some(Precedence::Call),
-        10 => Some(Precedence::Primary),
         _ => None,
     }
 }
