@@ -20,7 +20,7 @@ fn main() {
     // let vm = vm::VM::new();
 
     if args.len() == 1 {
-        repl();
+        // repl();
     } else if args.len() == 2 {
         run_file(&args[1]);
     } else {
@@ -32,28 +32,41 @@ fn main() {
 fn run_file(path: &str) {
     let source = fs::read_to_string(path).expect("Something went wrong reading the file");
 
-    let result = vm::interpret(&source);
+    let chunk = compiler::compile(&source);
+    if let Err(_) = chunk {
+        println!("Failed");
+        return;
+    }
+
+    let result = vm::run(&chunk.unwrap());
 
     match result {
-        vm::InterpretResult::CompileError => process::exit(65),
-        vm::InterpretResult::RuntimeError => process::exit(70),
+        vm::RunResult::CompileError => process::exit(65),
+        vm::RunResult::RuntimeError => process::exit(70),
         _ => (),
     }
 }
 
-fn repl() {
-    let mut line = String::new();
+// fn repl() {
+//     let mut line = String::new();
 
-    loop {
-        print!("> ");
-        io::stdout().flush().unwrap();
+//     loop {
+//         print!("> ");
+//         io::stdout().flush().unwrap();
 
-        if io::stdin().read_line(&mut line).unwrap_or(0) == 0 {
-            println!();
-            break;
-        }
+//         if io::stdin().read_line(&mut line).unwrap_or(0) == 0 {
+//             println!();
+//             break;
+//         }
 
-        vm::interpret(&line);
-        line.clear();
-    }
-}
+//         let chunk = compiler::compile(&line);
+//         if let Err(_) = chunk {
+//             println!("Failed");
+//             return;
+//         }
+
+//         let result = vm::run(&chunk.unwrap());
+
+//         line.clear();
+//     }
+// }

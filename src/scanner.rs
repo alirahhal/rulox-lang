@@ -1,4 +1,62 @@
-use crate::common::TokenType;
+#[derive(Debug, Eq, Copy, Clone, PartialEq, Hash)]
+pub enum TokenType {
+    // Single-character tokens.
+    TokenLeftParen,
+    TokenRightParen,
+    TokenLeftBrace,
+    TokenRightBrace,
+    TokenComma,
+    TokenDot,
+    TokenMinus,
+    TokenPlus,
+    TokenSemicolon,
+    TokenSlash,
+    TokenStar,
+
+    // One or two character tokens.
+    TokenBang,
+    TokenBangEqual,
+    TokenEqual,
+    TokenEqualEqual,
+    TokenGreater,
+    TokenGreaterEqual,
+    TokenLess,
+    TokenLessEqual,
+
+    // Literals.
+    TokenIdentifier,
+    TokenString,
+    TokenNumber,
+
+    // Keywords.
+    TokenAnd,
+    TokenClass,
+    TokenElse,
+    TokenFalse,
+    TokenFor,
+    TokenFun,
+    TokenIf,
+    TokenNil,
+    TokenOr,
+    TokenPrint,
+    TokenReturn,
+    TokenSuper,
+    TokenThis,
+    TokenTrue,
+    TokenVar,
+    TokenWhile,
+
+    TokenError,
+    TokenEof,
+
+    Unknown,
+}
+
+impl Default for TokenType {
+    fn default() -> Self {
+        TokenType::Unknown
+    }
+}
 
 pub struct Token {
     pub token_type: TokenType,
@@ -28,7 +86,7 @@ pub struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn init_scanner(source: &'a str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Scanner {
             source,
             start: 0,
@@ -316,7 +374,7 @@ mod tests {
     #[test]
     fn skip_whitespaces() {
         let source = " \r\t {".to_string();
-        let mut scanner = Scanner::init_scanner(&source);
+        let mut scanner = Scanner::new(&source);
 
         let t = scanner.scan_token();
         assert_eq!(
@@ -490,7 +548,7 @@ mod tests {
         let mut scanner: Scanner;
 
         for t in test_suites {
-            scanner = Scanner::init_scanner(&t.source);
+            scanner = Scanner::new(&t.source);
             let token = scanner.scan_token();
 
             assert_eq!(

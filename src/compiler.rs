@@ -1,28 +1,24 @@
 use lazy_static::lazy_static;
 use maplit::hashmap;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use crate::{
     chunk::Chunk,
-    common::{precedence_from_u8, OpCode, Precedence, TokenType},
+    common::{precedence_from_u8, OpCode, Precedence},
     debug::disassemble_chunk,
-    scanner::{Scanner, Token},
+    scanner::{Scanner, Token, TokenType},
     value::Value,
 };
 
-pub fn compile(source: &str, chunk: &mut Chunk) -> bool {
-    let mut scanner = Scanner::init_scanner(source);
+pub fn compile(source: &str) -> Result<Chunk, ()> {
+    let mut scanner = Scanner::new(source);
+    let mut chunk = Chunk::new();
+    let mut parser = Parser::new(&mut scanner, &mut chunk);
 
-    let mut parser = Parser::new(&mut scanner, chunk);
+    parser.parse();
 
-    parser.advance();
-
-    while !parser.match_token_type(TokenType::TokenEof) {
-        parser.declaration();
-    }
-
-    parser.end_compiler();
-    !parser.had_error
+    Ok(chunk)
+    // !parser.had_error
 }
 
 pub type ParseFn = fn(&mut Parser, can_assign: bool) -> ();
@@ -33,14 +29,14 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-pub struct Compiler {
-    pub locals: Vec<Local>,
-    pub scope_depth: i32,
-}
-
 pub struct Local {
     pub name: Token,
     pub depth: i32,
+}
+
+pub struct Compiler {
+    pub locals: Vec<Local>,
+    pub scope_depth: i32,
 }
 
 impl Compiler {
@@ -66,17 +62,6 @@ impl Compiler {
     pub fn update_local_depth_at(&mut self, index: usize, depth: i32) {
         self.locals[index].depth = depth;
     }
-}
-
-pub struct Parser<'a> {
-    pub current: Token,
-    pub previous: Token,
-    pub had_error: bool,
-    pub panic_mode: bool,
-
-    pub scanner: &'a mut Scanner<'a>,
-    pub chunk: &'a mut Chunk,
-    pub current_compiler: Compiler,
 }
 
 lazy_static! {
@@ -271,6 +256,17 @@ lazy_static! {
     };
 }
 
+pub struct Parser<'a> {
+    pub current: Token,
+    pub previous: Token,
+    pub had_error: bool,
+    pub panic_mode: bool,
+
+    pub scanner: &'a mut Scanner<'a>,
+    pub chunk: &'a mut Chunk,
+    pub current_compiler: Compiler,
+}
+
 impl<'a> Parser<'a> {
     pub fn new(scanner: &'a mut Scanner<'a>, chunk: &'a mut Chunk) -> Self {
         Parser {
@@ -291,6 +287,16 @@ impl<'a> Parser<'a> {
             chunk,
             current_compiler: Compiler::new(),
         }
+    }
+
+    pub fn parse(&mut self) {
+        self.advance();
+
+        while !self.match_token_type(TokenType::TokenEof) {
+            self.declaration();
+        }
+
+        self.end_compiler();
     }
 
     fn advance(&mut self) {
@@ -319,7 +325,7 @@ impl<'a> Parser<'a> {
         self.current.token_type == token_type
     }
 
-    pub fn match_token_type(&mut self, token_type: TokenType) -> bool {
+    fn match_token_type(&mut self, token_type: TokenType) -> bool {
         if !self.check(token_type) {
             return false;
         }

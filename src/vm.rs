@@ -5,7 +5,7 @@ use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
-    compiler, debug,
+    debug,
     utils::stack::Stack,
     value::Value,
 };
@@ -13,7 +13,7 @@ use crate::{
 const DEBUG_TRACE_EXECUTION: bool = false;
 const STACK_INITIAL_SIZE: usize = 256;
 
-pub enum InterpretResult {
+pub enum RunResult {
     Ok,
     CompileError,
     RuntimeError, // Unknown,
@@ -27,13 +27,7 @@ pub struct VM<'a> {
     pub globals: HashMap<String, Value>,
 }
 
-pub fn interpret(source: &str) -> InterpretResult {
-    let mut chunk = Chunk::new();
-
-    if !compiler::compile(source, &mut chunk) {
-        return InterpretResult::CompileError;
-    }
-
+pub fn run(chunk: &Chunk) -> RunResult {
     let mut vm = VM {
         chunk: &chunk,
         ip: &chunk.code[0],
@@ -41,12 +35,8 @@ pub fn interpret(source: &str) -> InterpretResult {
         globals: HashMap::new(),
     };
 
-    // self.chunk = &chunk;
-    // self.ip = &self.chunk.code[0 as usize];
-
     let result = vm.run();
 
-    chunk.free_chunk();
     result
 }
 
@@ -61,7 +51,7 @@ impl<'a> VM<'a> {
     //     }
     // }
 
-    fn run(&mut self) -> InterpretResult {
+    fn run(&mut self) -> RunResult {
         loop {
             if DEBUG_TRACE_EXECUTION {
                 print!("    ");
@@ -117,7 +107,7 @@ impl<'a> VM<'a> {
                         Some(v) => v,
                         None => {
                             self.runtime_error(format!("Undefined variable '{}'.", "name"));
-                            return InterpretResult::RuntimeError;
+                            return RunResult::RuntimeError;
                         }
                     };
 
@@ -130,7 +120,7 @@ impl<'a> VM<'a> {
                         Some(val) => val,
                         None => {
                             self.runtime_error(format!("Undefined variable '{}'.", name));
-                            return InterpretResult::RuntimeError;
+                            return RunResult::RuntimeError;
                         }
                     };
 
@@ -154,7 +144,7 @@ impl<'a> VM<'a> {
                     let name = self.read_constant().as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.globals.insert(name, self.peek(0).clone());
@@ -163,7 +153,7 @@ impl<'a> VM<'a> {
                     let name = self.read_long_constant().as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.globals.insert(name, self.peek(0).clone());
@@ -176,7 +166,7 @@ impl<'a> VM<'a> {
                 OpCode::OpGreater => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.binary_op(|a, b| Value::new_bool(a.as_number() > b.as_number()));
@@ -184,7 +174,7 @@ impl<'a> VM<'a> {
                 OpCode::OpLess => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.binary_op(|a, b| Value::new_bool(a.as_number() < b.as_number()));
@@ -196,13 +186,13 @@ impl<'a> VM<'a> {
                         self.binary_op(|a, b| Value::new_number(a.as_number() + b.as_number()));
                     } else {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
                 }
                 OpCode::OpSubtract => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.binary_op(|a, b| Value::new_number(a.as_number() - b.as_number()));
@@ -210,7 +200,7 @@ impl<'a> VM<'a> {
                 OpCode::OpMultiply => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.binary_op(|a, b| Value::new_number(a.as_number() * b.as_number()));
@@ -218,7 +208,7 @@ impl<'a> VM<'a> {
                 OpCode::OpDivide => {
                     if !self.peek(0).is_number() || !self.peek(1).is_number() {
                         self.runtime_error("Operands must be numbers.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
 
                     self.binary_op(|a, b| Value::new_number(a.as_number() / b.as_number()));
@@ -230,7 +220,7 @@ impl<'a> VM<'a> {
                 OpCode::OpNegate => {
                     if !self.peek(0).is_number() {
                         self.runtime_error("Operand must be a number.".to_string());
-                        return InterpretResult::RuntimeError;
+                        return RunResult::RuntimeError;
                     }
                     let value_to_negate = self.stack.pop().unwrap().as_number();
                     self.stack.push(Value::new_number(-value_to_negate));
@@ -258,7 +248,7 @@ impl<'a> VM<'a> {
                 }
                 OpCode::OpReturn => {
                     // Exit interpreter.
-                    return InterpretResult::Ok;
+                    return RunResult::Ok;
                 }
                 _ => panic!("Unknown opcode {:?}\n", instruction),
             }
