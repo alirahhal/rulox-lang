@@ -5,5 +5,6 @@
 	"explorer.experimental.fileNesting.enabled": true,
 	"explorer.experimental.fileNesting.patterns": {
 		"cargo.toml": "cargo.lock, rust-toolchain.toml, rustfmt.toml"
-	}
+	},
+	"cSpell.enabled": false
 }
