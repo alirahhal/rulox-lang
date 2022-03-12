@@ -332,10 +332,6 @@ impl<'a> VM<'a> {
         self.chunk.constants.values[self.read_byte() as usize].clone()
     }
 
-    // fn read_constant_ref(&mut self) -> &Value {
-    //     &self.chunk.constants.values[self.read_byte() as usize]
-    // }
-
     fn read_long_constant(&mut self) -> Value {
         let mut buf = [0_u8; 4];
         for i in 0..3 {
