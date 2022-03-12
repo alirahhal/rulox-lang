@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::ptr;
 use std::rc::Rc;
 
 use crate::object::Obj;
@@ -15,7 +14,7 @@ pub enum Value {
 }
 
 impl Debug for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Boolean(v) => {
                 if *v {
@@ -78,37 +77,25 @@ impl Value {
 
     pub fn as_string(&self) -> &str {
         match &**self.as_obj() {
-            Obj::String(v) => &v,
-            _ => panic!(),
+            Obj::String(v) => v,
+            // _ => panic!(),
         }
     }
 
     pub fn is_bool(&self) -> bool {
-        match self {
-            Value::Boolean(_) => true,
-            _ => false,
-        }
+        matches!(self, Value::Boolean(_))
     }
 
     pub fn is_nil(&self) -> bool {
-        match self {
-            Value::Nil => true,
-            _ => false,
-        }
+        matches!(self, Value::Nil)
     }
 
     pub fn is_number(&self) -> bool {
-        match self {
-            Value::Number(_) => true,
-            _ => false,
-        }
+        matches!(self, Value::Number(_))
     }
 
     pub fn is_obj(&self) -> bool {
-        match self {
-            Value::Object(_) => true,
-            _ => false,
-        }
+        matches!(self, Value::Object(_))
     }
 
     pub fn is_falsey(&self) -> bool {
@@ -120,10 +107,7 @@ impl Value {
 
     pub fn is_string(&self) -> bool {
         match self {
-            Value::Object(v) => match **v {
-                Obj::String(_) => true,
-                _ => false,
-            },
+            Value::Object(v) => matches!(**v, Obj::String(_)),
             _ => false,
         }
     }
@@ -149,7 +133,7 @@ impl Value {
 
                 match tuple {
                     (Obj::String(v1), Obj::String(v2)) => v1 == v2,
-                    _ => ptr::eq(obj1.as_ref(), obj2.as_ref()),
+                    // _ => ptr::eq(obj1.as_ref(), obj2.as_ref()),
                 }
             }
         }

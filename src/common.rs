@@ -153,17 +153,17 @@ impl Default for TokenType {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Precedence {
-    PrecNone,
-    PrecAssignment, // =
-    PrecOr,         // or
-    PrecAnd,        // and
-    PrecEquality,   // == !=
-    PrecComparison, // < > <= >=
-    PrecTerm,       // + -
-    PrecFactor,     // * /
-    PrecUnary,      // ! -
-    PrecCall,       // . ()
-    PrecPrimary,
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
 
     Unknown,
 }
@@ -176,17 +176,17 @@ impl Default for Precedence {
 
 pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
     match n {
-        0 => Some(Precedence::PrecNone),
-        1 => Some(Precedence::PrecAssignment),
-        2 => Some(Precedence::PrecOr),
-        3 => Some(Precedence::PrecAnd),
-        4 => Some(Precedence::PrecEquality),
-        5 => Some(Precedence::PrecComparison),
-        6 => Some(Precedence::PrecTerm),
-        7 => Some(Precedence::PrecFactor),
-        8 => Some(Precedence::PrecUnary),
-        9 => Some(Precedence::PrecCall),
-        10 => Some(Precedence::PrecPrimary),
+        0 => Some(Precedence::None),
+        1 => Some(Precedence::Assignment),
+        2 => Some(Precedence::Or),
+        3 => Some(Precedence::And),
+        4 => Some(Precedence::Equality),
+        5 => Some(Precedence::Comparison),
+        6 => Some(Precedence::Term),
+        7 => Some(Precedence::Factor),
+        8 => Some(Precedence::Unary),
+        9 => Some(Precedence::Call),
+        10 => Some(Precedence::Primary),
         _ => None,
     }
 }

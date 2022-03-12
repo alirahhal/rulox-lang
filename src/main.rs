@@ -35,8 +35,8 @@ fn run_file(path: &str) {
     let result = vm::interpret(&source);
 
     match result {
-        vm::InterpretResult::InterpretCompileError => process::exit(65),
-        vm::InterpretResult::InterpretRuntimeError => process::exit(70),
+        vm::InterpretResult::CompileError => process::exit(65),
+        vm::InterpretResult::RuntimeError => process::exit(70),
         _ => (),
     }
 }

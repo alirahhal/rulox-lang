@@ -21,14 +21,14 @@ impl Clone for Token {
 }
 
 pub struct Scanner<'a> {
-    pub source: &'a String,
+    pub source: &'a str,
     pub start: i32,
     pub current: i32,
     pub line: i32,
 }
 
 impl<'a> Scanner<'a> {
-    pub fn init_scanner(source: &'a String) -> Self {
+    pub fn init_scanner(source: &'a str) -> Self {
         Scanner {
             source,
             start: 0,
