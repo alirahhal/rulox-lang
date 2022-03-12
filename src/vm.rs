@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
@@ -6,7 +6,6 @@ use crate::{
     chunk::Chunk,
     common::{opcode_from_u8, OpCode},
     compiler, debug,
-    object::ObjString,
     utils::stack::Stack,
     value::Value,
 };
@@ -72,12 +71,9 @@ impl<'a> VM<'a> {
                 });
             }
 
-            let instruction: u8;
-            unsafe {
-                instruction = self.read_byte();
-            }
+            let instruction = self.read_byte();
 
-            match opcode_from_u8(instruction).unwrap_or_default() {
+            match opcode_from_u8(instruction).unwrap() {
                 OpCode::OpConstant => {
                     let constant = self.read_constant();
                     self.stack.push(constant);
@@ -98,28 +94,29 @@ impl<'a> VM<'a> {
                 OpCode::OpPop => {
                     self.stack.pop();
                 }
-                OpCode::OpGetLocal => unsafe {
+                OpCode::OpGetLocal => {
                     let slot = self.read_byte();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 },
-                OpCode::OpGetLocalLong => unsafe {
+                OpCode::OpGetLocalLong => {
                     let slot = self.read_long();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 },
-                OpCode::OpSetLocal => unsafe {
+                OpCode::OpSetLocal => {
                     let slot = self.read_byte();
                     self.stack.set_at(slot as usize, self.peek(0).clone());
                 },
-                OpCode::OpSetLocalLong => unsafe {
+                OpCode::OpSetLocalLong => {
                     let slot = self.read_long();
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 },
                 OpCode::OpGetGlobal => {
-                    let name = self.read_constant().as_rust_string();
-                    let value = match self.globals.get(&name) {
-                        Some(val) => val,
+                    let v = self.read_constant();
+                    let name = v.as_string();
+                    let value = match self.globals.get(name) {
+                        Some(v) => v,
                         None => {
-                            self.runtime_error(format!("Undefined variable '{}'.", name));
+                            self.runtime_error(format!("Undefined variable '{}'.", "name"));
                             return InterpretResult::InterpretRuntimeError;
                         }
                     };
@@ -127,8 +124,9 @@ impl<'a> VM<'a> {
                     self.stack.push(value.clone());
                 }
                 OpCode::OpGetGlobalLong => {
-                    let name = self.read_long_constant().as_rust_string();
-                    let value = match self.globals.get(&name) {
+                    let v = self.read_long_constant();
+                    let name = v.as_string();
+                    let value = match self.globals.get(name) {
                         Some(val) => val,
                         None => {
                             self.runtime_error(format!("Undefined variable '{}'.", name));
@@ -139,19 +137,21 @@ impl<'a> VM<'a> {
                     self.stack.push(value.clone());
                 }
                 OpCode::OpDefineGlobal => {
-                    let name = self.read_constant().as_rust_string();
-                    self.globals.insert(name.to_owned(), self.peek(0).clone());
+                    let v = self.read_constant();
+                    let name = v.as_string().to_owned();
+                    self.globals.insert(name, self.peek(0).clone());
 
                     self.stack.pop();
                 }
                 OpCode::OpDefineGlobalLong => {
-                    let name = self.read_long_constant().as_rust_string();
-                    self.globals.insert(name.to_owned(), self.peek(0).clone());
+                    let v = self.read_long_constant();
+                    let name = v.as_string().to_owned();
+                    self.globals.insert(name, self.peek(0).clone());
 
                     self.stack.pop();
                 }
                 OpCode::OpSetGlobal => {
-                    let name = self.read_constant().as_rust_string();
+                    let name = self.read_constant().as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
                         return InterpretResult::InterpretRuntimeError;
@@ -160,7 +160,7 @@ impl<'a> VM<'a> {
                     self.globals.insert(name, self.peek(0).clone());
                 }
                 OpCode::OpSetGlobalLong => {
-                    let name = self.read_long_constant().as_rust_string();
+                    let name = self.read_long_constant().as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
                         return InterpretResult::InterpretRuntimeError;
@@ -282,10 +282,15 @@ impl<'a> VM<'a> {
     }
 
     fn concatenate(&mut self) {
-        let b = self.stack.pop().unwrap().as_rust_string();
-        let a = self.stack.pop().unwrap().as_rust_string();
+        let b_option = self.stack.pop().unwrap();
+        let a_option = self.stack.pop().unwrap();
+        let b = b_option.as_string();
+        let a = a_option.as_string();
+        let mut s = String::with_capacity(a.len() + b.len());
+        s.push_str(a);
+        s.push_str(b);
 
-        let value = Value::new_obj(Rc::new(ObjString::new(format!("{}{}", a, b))));
+        let value = Value::new_obj_string(s);
 
         self.stack.push(value);
     }
@@ -294,7 +299,11 @@ impl<'a> VM<'a> {
         println!("{}", message);
     }
 
-    unsafe fn read_byte(&mut self) -> u8 {
+    fn read_byte(&mut self) -> u8 {
+        unsafe { self.read_byte_unsafe() }
+    }
+
+    unsafe fn read_byte_unsafe(&mut self) -> u8 {
         let current_byte = *self.ip;
 
         let ptr = self.ip as *const u8;
@@ -303,7 +312,7 @@ impl<'a> VM<'a> {
         current_byte
     }
 
-    unsafe fn read_short(&mut self) -> u16 {
+    fn read_short(&mut self) -> u16 {
         let mut buf = [0_u8; 4];
         for i in 0..2 {
             buf[i] = self.read_byte();
@@ -311,7 +320,7 @@ impl<'a> VM<'a> {
         BigEndian::read_u16(&buf)
     }
 
-    unsafe fn read_long(&mut self) -> u32 {
+    fn read_long(&mut self) -> u32 {
         let mut buf = [0_u8; 4];
         for i in 0..3 {
             buf[i] = self.read_byte();
@@ -320,15 +329,17 @@ impl<'a> VM<'a> {
     }
 
     fn read_constant(&mut self) -> Value {
-        self.chunk.constants.values[unsafe { self.read_byte() } as usize].clone()
+        self.chunk.constants.values[self.read_byte() as usize].clone()
     }
+
+    // fn read_constant_ref(&mut self) -> &Value {
+    //     &self.chunk.constants.values[self.read_byte() as usize]
+    // }
 
     fn read_long_constant(&mut self) -> Value {
         let mut buf = [0_u8; 4];
         for i in 0..3 {
-            unsafe {
-                buf[i] = self.read_byte();
-            }
+            buf[i] = self.read_byte();
         }
         let constant_address = LittleEndian::read_u32(&buf);
         self.chunk.constants.values[constant_address as usize].clone()

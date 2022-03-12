@@ -1,4 +1,3 @@
-#[repr(u8)]
 #[derive(Debug, PartialEq)]
 pub enum OpCode {
     OpReturn,
@@ -78,7 +77,6 @@ pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
     }
 }
 
-#[repr(u8)]
 #[derive(Debug, Eq, Copy, Clone, PartialEq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
@@ -153,7 +151,6 @@ impl Default for TokenType {
 //     }
 // }
 
-#[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Precedence {
     PrecNone,
@@ -192,13 +189,4 @@ pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
         10 => Some(Precedence::PrecPrimary),
         _ => None,
     }
-}
-
-#[repr(u8)]
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum ValueType {
-    ValBool,
-    ValNil,
-    ValNumber,
-    ValObj,
 }

@@ -1,25 +1,37 @@
-use std::mem::ManuallyDrop;
-use std::ops::Deref;
+use std::fmt::Debug;
 use std::ptr;
 use std::rc::Rc;
 
-use crate::common::ValueType;
-use crate::object::{Obj, ObjString, ObjType};
+use crate::object::Obj;
 
-// #[repr(C)]
-// pub union InnerValue {
-//     boolean: bool,
-//     number: i64,
-//     obj: ManuallyDrop<Rc<dyn Obj>>,
-// }
-
+#[derive(Clone)]
 pub enum Value {
     Boolean(bool),
     Number(i64),
     // Integer(i32),
     // Double(f32),
-    Object(Rc<dyn Obj>),
+    Object(Rc<Obj>),
     Nil,
+}
+
+impl Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Boolean(v) => {
+                if *v {
+                    print!("true");
+                } else {
+                    print!("false");
+                }
+            }
+            Value::Number(v) => print!("{}", *v),
+            Value::Object(r) => match &**r {
+                Obj::String(v) => print!("{}", v),
+            },
+            Value::Nil => print!("nil"),
+        };
+        Ok(())
+    }
 }
 
 impl Value {
@@ -35,8 +47,12 @@ impl Value {
         Value::Number(val)
     }
 
-    pub fn new_obj(obj: Rc<dyn Obj>) -> Self {
+    pub fn new_obj(obj: Rc<Obj>) -> Self {
         Value::Object(obj)
+    }
+
+    pub fn new_obj_string(s: String) -> Self {
+        Value::Object(Rc::new(Obj::String(s)))
     }
 
     pub fn as_bool(&self) -> bool {
@@ -53,19 +69,18 @@ impl Value {
         }
     }
 
-    pub fn as_obj(&self) -> &Rc<dyn Obj> {
+    pub fn as_obj(&self) -> &Rc<Obj> {
         match self {
             Value::Object(r) => r,
             _ => panic!(),
         }
     }
 
-    pub fn as_string(&self) -> &ObjString {
-        self.as_obj().deref().as_obj_string()
-    }
-
-    pub fn as_rust_string(&self) -> &str {
-        &self.as_string().string
+    pub fn as_string(&self) -> &str {
+        match &**self.as_obj() {
+            Obj::String(v) => &v,
+            _ => panic!(),
+        }
     }
 
     pub fn is_bool(&self) -> bool {
@@ -98,42 +113,23 @@ impl Value {
 
     pub fn is_falsey(&self) -> bool {
         match self {
-            Value::Boolean(v) => *v,
+            Value::Boolean(v) => !*v,
             _ => true,
         }
     }
 
     pub fn is_string(&self) -> bool {
-        self.is_obj_type(ObjType::ObjString)
-    }
-
-    pub fn obj_type(&self) -> ObjType {
-        self.as_obj().obj_type()
-    }
-
-    pub fn is_obj_type(&self, obj_type: ObjType) -> bool {
-        self.is_obj() && self.obj_type() == obj_type
+        match self {
+            Value::Object(v) => match **v {
+                Obj::String(_) => true,
+                _ => false,
+            },
+            _ => false,
+        }
     }
 
     pub fn print_value(&self) {
-        match self {
-            Value::Boolean(v) => {
-                if *v {
-                    print!("true");
-                } else {
-                    print!("false");
-                }
-            }
-            Value::Number(v) => print!("{}", *v),
-            Value::Object(_) => self.print_object(),
-            Value::Nil => print!("nil"),
-        }
-    }
-
-    pub fn print_object(&self) {
-        match self.obj_type() {
-            ObjType::ObjString => print!("{}", self.as_rust_string()),
-        }
+        print!("{:?}", self)
     }
 
     pub fn values_equal(&self, other: &Self) -> bool {
@@ -146,13 +142,14 @@ impl Value {
             Value::Nil => true,
             Value::Number(_) => self.as_number() == other.as_number(),
             Value::Object(_) => {
-                let obj_1 = self.as_obj();
-                let obj_2 = other.as_obj();
+                let obj1 = self.as_obj();
+                let obj2 = other.as_obj();
 
-                if obj_1.obj_type() == ObjType::ObjString && obj_2.obj_type() == ObjType::ObjString {
-                    self.as_rust_string() == other.as_rust_string()
-                } else {
-                    ptr::eq(obj_1.as_ref(), obj_2.as_ref())
+                let tuple = (&**obj1, &**obj2);
+
+                match tuple {
+                    (Obj::String(v1), Obj::String(v2)) => v1 == v2,
+                    _ => ptr::eq(obj1.as_ref(), obj2.as_ref()),
                 }
             }
         }

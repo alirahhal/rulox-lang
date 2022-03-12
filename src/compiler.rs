@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     common::{precedence_from_u8, OpCode, Precedence, TokenType},
     debug::disassemble_chunk,
-    object::{Obj, ObjString},
+    object::Obj,
     scanner::{Scanner, Token},
     value::Value,
 };
@@ -534,7 +534,7 @@ impl<'a> Parser<'a> {
 
     fn number(&mut self, _can_assign: bool) {
         let value: Value = Value::new_number(self.previous.lexeme.parse().unwrap());
-        self.emit_constant(&value);
+        self.emit_constant(value);
     }
 
     fn or_(&mut self, _can_assign: bool) {
@@ -550,10 +550,7 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self, _can_assign: bool) {
         let slen = self.previous.lexeme.len();
-        let p: Rc<dyn Obj> = Rc::new(ObjString::new(
-            self.previous.lexeme[1..slen - 1].to_string(),
-        ));
-        let value = Value::new_obj(p);
+        let value = Value::new_obj_string(self.previous.lexeme[1..slen - 1].to_string());
         self.emit_constant(value);
     }
 
@@ -684,9 +681,7 @@ impl<'a> Parser<'a> {
 
     fn identifier_constant(&mut self, name: &Token) -> i32 {
         self.current_chunk()
-            .add_constant(&Value::new_obj(Rc::new(ObjString::new(
-                name.lexeme.to_owned(),
-            ))))
+            .add_constant(Value::new_obj_string(name.lexeme.to_owned()))
     }
 
     fn resolve_local(&mut self, name: &Token) -> i32 {
