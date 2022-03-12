@@ -10,9 +10,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new() -> Self {
-        Chunk {
-            ..Default::default()
-        }
+        Default::default()
     }
 
     pub fn write_chunk(&mut self, byte: u8, line: i32) {
@@ -20,7 +18,7 @@ impl Chunk {
         self.lines.push(line);
     }
 
-    pub fn write_constant(&mut self, value: &Value, line: i32) {
+    pub fn write_constant(&mut self, value: Value, line: i32) {
         let index = self.add_constant(value);
 
         if index < 256 {
@@ -34,9 +32,9 @@ impl Chunk {
         }
     }
 
-    pub fn add_constant(&mut self, value: &Value) -> i32 {
+    pub fn add_constant(&mut self, value: Value) -> i32 {
         self.constants.write_value_array(value);
-        return (self.constants.values.len() - 1) as i32;
+        (self.constants.values.len() - 1) as i32
     }
 
     pub fn free_chunk(&mut self) {

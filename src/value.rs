@@ -1,202 +1,139 @@
-use std::mem::ManuallyDrop;
-use std::ops::Deref;
-use std::ptr;
+use std::fmt::Debug;
 use std::rc::Rc;
 
-use crate::common::ValueType;
-use crate::object::{Obj, ObjString, ObjType};
+use crate::object::Obj;
 
-#[repr(C)]
-pub union InnerValue {
-    boolean: bool,
-    number: i64,
-    obj: ManuallyDrop<Rc<dyn Obj>>,
+#[derive(Clone)]
+pub enum Value {
+    Boolean(bool),
+    Number(i64),
+    // Integer(i32),
+    // Double(f32),
+    Object(Rc<Obj>),
+    Nil,
 }
 
-pub struct Value {
-    pub value_type: ValueType,
-    pub value: InnerValue,
-}
-
-impl Clone for Value {
-    fn clone(&self) -> Self {
-        unsafe {
-            match self.value_type {
-                ValueType::ValBool => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            boolean: self.value.boolean,
-                        },
-                    }
-                }
-                ValueType::ValNil => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            number: self.value.number,
-                        },
-                    }
-                }
-                ValueType::ValNumber => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            number: self.value.number,
-                        },
-                    }
-                }
-                ValueType::ValObj => {
-                    return Self {
-                        value_type: self.value_type,
-                        value: InnerValue {
-                            obj: ManuallyDrop::new(Rc::clone(&self.value.obj.deref())),
-                        },
-                    };
-                }
-            }
-        }
-    }
-
-    fn clone_from(&mut self, source: &Self) {
-        *self = source.clone();
-    }
-}
-
-impl Drop for Value {
-    fn drop(&mut self) {
-        if self.is_obj() {
-            unsafe { ManuallyDrop::drop(&mut self.value.obj) }
-        }
-    }
-}
-
-impl Value {
-    pub fn new_bool(val: bool) -> Self {
-        Value {
-            value_type: ValueType::ValBool,
-            value: InnerValue { boolean: val },
-        }
-    }
-
-    pub fn new_nil() -> Self {
-        Value {
-            value_type: ValueType::ValNil,
-            value: InnerValue { number: 0 },
-        }
-    }
-
-    pub fn new_number(val: i64) -> Self {
-        Value {
-            value_type: ValueType::ValNumber,
-            value: InnerValue { number: val },
-        }
-    }
-
-    pub fn new_obj(obj: Rc<dyn Obj>) -> Self {
-        Value {
-            value_type: ValueType::ValObj,
-            value: InnerValue {
-                obj: ManuallyDrop::new(obj),
-            },
-        }
-    }
-
-    pub fn as_bool(&self) -> bool {
-        unsafe {
-            return self.value.boolean;
-        }
-    }
-
-    pub fn as_number(&self) -> i64 {
-        unsafe {
-            return self.value.number;
-        }
-    }
-
-    pub fn as_obj(&self) -> Rc<dyn Obj> {
-        unsafe { Rc::clone(&self.value.obj.deref()) }
-    }
-
-    pub fn as_string(&self) -> ObjString {
-        let c = self.as_obj();
-        c.as_obj_string().unwrap().clone()
-    }
-
-    pub fn as_rust_string(&self) -> String {
-        self.as_string().string.clone()
-    }
-
-    pub fn is_bool(&self) -> bool {
-        self.value_type == ValueType::ValBool
-    }
-
-    pub fn is_nil(&self) -> bool {
-        self.value_type == ValueType::ValNil
-    }
-
-    pub fn is_number(&self) -> bool {
-        self.value_type == ValueType::ValNumber
-    }
-
-    pub fn is_obj(&self) -> bool {
-        self.value_type == ValueType::ValObj
-    }
-
-    pub fn is_falsey(&self) -> bool {
-        self.is_nil() || (self.is_bool() && !self.as_bool())
-    }
-
-    pub fn is_string(&self) -> bool {
-        self.is_obj_type(ObjType::ObjString)
-    }
-
-    pub fn obj_type(&self) -> ObjType {
-        self.as_obj().obj_type()
-    }
-
-    pub fn is_obj_type(&self, obj_type: ObjType) -> bool {
-        return self.is_obj() && self.obj_type() == obj_type;
-    }
-
-    pub fn print_value(&self) {
-        match self.value_type {
-            ValueType::ValBool => {
-                if self.as_bool() {
+impl Debug for Value {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Boolean(v) => {
+                if *v {
                     print!("true");
                 } else {
                     print!("false");
                 }
             }
-            ValueType::ValNil => print!("nil"),
-            ValueType::ValNumber => print!("{}", self.as_number()),
-            ValueType::ValObj => self.print_object(),
+            Value::Number(v) => print!("{}", *v),
+            Value::Object(r) => match &**r {
+                Obj::String(v) => print!("{}", v),
+            },
+            Value::Nil => print!("nil"),
+        };
+        Ok(())
+    }
+}
+
+impl Value {
+    pub fn new_bool(val: bool) -> Self {
+        Value::Boolean(val)
+    }
+
+    pub fn new_nil() -> Self {
+        Value::Nil
+    }
+
+    pub fn new_number(val: i64) -> Self {
+        Value::Number(val)
+    }
+
+    pub fn new_obj(obj: Rc<Obj>) -> Self {
+        Value::Object(obj)
+    }
+
+    pub fn new_obj_string(s: String) -> Self {
+        Value::Object(Rc::new(Obj::String(s)))
+    }
+
+    pub fn as_bool(&self) -> bool {
+        match self {
+            Value::Boolean(v) => *v,
+            _ => panic!(),
         }
     }
 
-    pub fn print_object(&self) {
-        match self.obj_type() {
-            ObjType::ObjString => print!("{}", self.as_rust_string()),
+    pub fn as_number(&self) -> i64 {
+        match self {
+            Value::Number(v) => *v,
+            _ => panic!(),
         }
     }
 
-    pub fn values_equal(&self, other: &Value) -> bool {
-        if self.value_type != other.value_type {
+    pub fn as_obj(&self) -> &Rc<Obj> {
+        match self {
+            Value::Object(r) => r,
+            _ => panic!(),
+        }
+    }
+
+    pub fn as_string(&self) -> &str {
+        match &**self.as_obj() {
+            Obj::String(v) => v,
+            // _ => panic!(),
+        }
+    }
+
+    pub fn is_bool(&self) -> bool {
+        matches!(self, Value::Boolean(_))
+    }
+
+    pub fn is_nil(&self) -> bool {
+        matches!(self, Value::Nil)
+    }
+
+    pub fn is_number(&self) -> bool {
+        matches!(self, Value::Number(_))
+    }
+
+    pub fn is_obj(&self) -> bool {
+        matches!(self, Value::Object(_))
+    }
+
+    pub fn is_falsey(&self) -> bool {
+        match self {
+            Value::Boolean(v) => !*v,
+            _ => true,
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self {
+            Value::Object(v) => matches!(**v, Obj::String(_)),
+            _ => false,
+        }
+    }
+
+    pub fn print_value(&self) {
+        print!("{:?}", self)
+    }
+
+    pub fn values_equal(&self, other: &Self) -> bool {
+        if core::mem::discriminant(self) != core::mem::discriminant(other) {
             return false;
         }
 
-        match self.value_type {
-            ValueType::ValBool => self.as_bool() == other.as_bool(),
-            ValueType::ValNil => true,
-            ValueType::ValNumber => self.as_number() == other.as_number(),
-            ValueType::ValObj => {
-                let a_obj = self.as_obj();
-                let b_obj = other.as_obj();
+        match self {
+            Value::Boolean(_) => self.as_bool() == other.as_bool(),
+            Value::Nil => true,
+            Value::Number(_) => self.as_number() == other.as_number(),
+            Value::Object(_) => {
+                let obj1 = self.as_obj();
+                let obj2 = other.as_obj();
 
-                if a_obj.obj_type() == ObjType::ObjString {
-                    return self.as_rust_string() == other.as_rust_string();
-                } else {
-                    return ptr::eq(a_obj.as_ref(), b_obj.as_ref());
+                let tuple = (&**obj1, &**obj2);
+
+                match tuple {
+                    (Obj::String(v1), Obj::String(v2)) => v1 == v2,
+                    // _ => ptr::eq(obj1.as_ref(), obj2.as_ref()),
                 }
             }
         }
@@ -209,8 +146,8 @@ pub struct ValueArray {
 }
 
 impl ValueArray {
-    pub fn write_value_array(&mut self, value: &Value) {
-        self.values.push(value.clone());
+    pub fn write_value_array(&mut self, value: Value) {
+        self.values.push(value);
     }
 
     pub fn free_value_array(&mut self) {
