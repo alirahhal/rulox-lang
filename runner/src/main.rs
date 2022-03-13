@@ -3,7 +3,7 @@ use std::{
     process,
 };
 
-use vm::vm::RunResult;
+use vm::InterpretResult;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -32,8 +32,8 @@ fn run_file(path: &str) {
     let result = vm::run(&chunk.unwrap());
 
     match result {
-        RunResult::CompileError => process::exit(65),
-        RunResult::RuntimeError => process::exit(70),
+        InterpretResult::CompileError => process::exit(65),
+        InterpretResult::RuntimeError => process::exit(70),
         _ => (),
     }
 }

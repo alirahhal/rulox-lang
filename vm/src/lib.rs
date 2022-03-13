@@ -1,5 +1,5 @@
-pub mod stack;
-pub mod vm;
+mod stack;
+mod vm;
 pub mod debug;
 
 use std::collections::HashMap;
@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use common::chunk::Chunk;
 use stack::Stack;
 use vm::{RunResult, VM, STACK_INITIAL_SIZE};
+
+pub use vm::RunResult as InterpretResult;
 
 pub fn run(chunk: &Chunk) -> RunResult {
     let mut vm = VM {
