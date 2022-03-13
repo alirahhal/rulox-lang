@@ -1,4 +1,4 @@
 #[derive(Debug)]
-pub enum Obj {
+pub enum Object {
     String(String),
 }

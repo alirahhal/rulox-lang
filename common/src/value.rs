@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use crate::object::Obj;
+use crate::object::Object;
 
 #[derive(Clone)]
 pub enum Value {
     Boolean(bool),
     Number(i64),
-    Object(Rc<Obj>),
+    Object(Rc<Object>),
     Nil,
 }
 
@@ -23,7 +23,7 @@ impl Debug for Value {
             }
             Value::Number(v) => print!("{}", *v),
             Value::Object(r) => match &**r {
-                Obj::String(v) => print!("{}", v),
+                Object::String(v) => print!("{}", v),
             },
             Value::Nil => print!("nil"),
         };
@@ -44,12 +44,12 @@ impl Value {
         Value::Number(val)
     }
 
-    pub fn new_obj(obj: Rc<Obj>) -> Self {
+    pub fn new_obj(obj: Rc<Object>) -> Self {
         Value::Object(obj)
     }
 
     pub fn new_obj_string(s: String) -> Self {
-        Value::Object(Rc::new(Obj::String(s)))
+        Value::Object(Rc::new(Object::String(s)))
     }
 
     pub fn as_bool(&self) -> bool {
@@ -66,7 +66,7 @@ impl Value {
         }
     }
 
-    pub fn as_obj(&self) -> &Rc<Obj> {
+    pub fn as_obj(&self) -> &Rc<Object> {
         match self {
             Value::Object(r) => r,
             _ => panic!(),
@@ -75,7 +75,7 @@ impl Value {
 
     pub fn as_string(&self) -> &str {
         match &**self.as_obj() {
-            Obj::String(v) => v,
+            Object::String(v) => v,
             // _ => panic!(),
         }
     }
@@ -105,7 +105,7 @@ impl Value {
 
     pub fn is_string(&self) -> bool {
         match self {
-            Value::Object(v) => matches!(**v, Obj::String(_)),
+            Value::Object(v) => matches!(**v, Object::String(_)),
             _ => false,
         }
     }
@@ -130,7 +130,7 @@ impl Value {
                 let tuple = (&**obj1, &**obj2);
 
                 match tuple {
-                    (Obj::String(v1), Obj::String(v2)) => v1 == v2,
+                    (Object::String(v1), Object::String(v2)) => v1 == v2,
                     // _ => ptr::eq(obj1.as_ref(), obj2.as_ref()),
                 }
             }
