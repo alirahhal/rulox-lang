@@ -9,6 +9,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
+name = "common"
+version = "0.1.0"
+
+[[package]]
+name = "compiler"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "common",
+ "lazy_static",
+ "maplit",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21,10 +35,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
-name = "rulox-lang"
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "compiler",
+ "vm",
+]
+
+[[package]]
+name = "vm"
 version = "0.1.0"
 dependencies = [
  "byteorder",
- "lazy_static",
- "maplit",
+ "common",
 ]

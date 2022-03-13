@@ -1,24 +1,38 @@
+use common::{chunk::{Chunk, OpCode}, value::Value};
 use lazy_static::lazy_static;
 use maplit::hashmap;
 use std::collections::HashMap;
 
-use crate::{
-    chunk::Chunk,
-    common::{precedence_from_u8, OpCode, Precedence},
-    debug::disassemble_chunk,
-    scanner::{Scanner, Token, TokenType},
-    value::Value,
-};
+use crate::{scanner::{scanner::Scanner, token::{TokenType, Token}}, compiler::Compiler};
 
-pub fn compile(source: &str) -> Result<Chunk, ()> {
-    let mut scanner = Scanner::new(source);
-    let mut chunk = Chunk::new();
-    let mut parser = Parser::new(&mut scanner, &mut chunk);
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+}
 
-    parser.parse();
-
-    Ok(chunk)
-    // !parser.had_error
+pub fn precedence_from_u8(n: u8) -> Option<Precedence> {
+    match n {
+        0 => Some(Precedence::None),
+        1 => Some(Precedence::Assignment),
+        2 => Some(Precedence::Or),
+        3 => Some(Precedence::And),
+        4 => Some(Precedence::Equality),
+        5 => Some(Precedence::Comparison),
+        6 => Some(Precedence::Term),
+        7 => Some(Precedence::Factor),
+        8 => Some(Precedence::Unary),
+        9 => Some(Precedence::Call),
+        _ => None,
+    }
 }
 
 pub type ParseFn = fn(&mut Parser, can_assign: bool) -> ();
@@ -27,41 +41,6 @@ pub struct ParseRule {
     pub prefix: Option<ParseFn>,
     pub infix: Option<ParseFn>,
     pub precedence: Precedence,
-}
-
-pub struct Local {
-    pub name: Token,
-    pub depth: i32,
-}
-
-pub struct Compiler {
-    pub locals: Vec<Local>,
-    pub scope_depth: i32,
-}
-
-impl Compiler {
-    pub fn new() -> Self {
-        Compiler {
-            scope_depth: 0,
-            locals: Vec::new(),
-        }
-    }
-
-    pub fn add_local(&mut self, name: &Token) {
-        let local = Local {
-            name: name.clone(),
-            depth: -1,
-        };
-        self.locals.push(local);
-    }
-
-    pub fn local_at(&self, index: usize) -> &Local {
-        &self.locals[index] as _
-    }
-
-    pub fn update_local_depth_at(&mut self, index: usize, depth: i32) {
-        self.locals[index].depth = depth;
-    }
 }
 
 lazy_static! {
@@ -382,9 +361,10 @@ impl<'a> Parser<'a> {
 
     fn end_compiler(&mut self) {
         self.emit_return();
-        if !self.had_error {
-            disassemble_chunk(self.current_chunk(), "code".to_string());
-        }
+        // TODO:
+        // if !self.had_error {
+        //     disassemble_chunk(self.current_chunk(), "code".to_string());
+        // }
     }
 
     fn begin_scope(&mut self) {

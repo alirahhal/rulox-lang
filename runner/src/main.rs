@@ -1,18 +1,9 @@
-mod chunk;
-mod common;
-mod compiler;
-mod debug;
-mod object;
-mod scanner;
-mod utils;
-mod value;
-mod vm;
-
 use std::{
     env, fs,
-    io::{self, Write},
     process,
 };
+
+use vm::vm::RunResult;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -41,8 +32,8 @@ fn run_file(path: &str) {
     let result = vm::run(&chunk.unwrap());
 
     match result {
-        vm::RunResult::CompileError => process::exit(65),
-        vm::RunResult::RuntimeError => process::exit(70),
+        RunResult::CompileError => process::exit(65),
+        RunResult::RuntimeError => process::exit(70),
         _ => (),
     }
 }

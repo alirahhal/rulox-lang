@@ -1,6 +1,6 @@
-use crate::chunk::Chunk;
-use crate::common::{opcode_from_u8, OpCode};
+
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use common::chunk::{Chunk, OpCode, opcode_from_u8};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("== {} ==", name);

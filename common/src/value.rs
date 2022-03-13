@@ -7,8 +7,6 @@ use crate::object::Obj;
 pub enum Value {
     Boolean(bool),
     Number(i64),
-    // Integer(i32),
-    // Double(f32),
     Object(Rc<Obj>),
     Nil,
 }
