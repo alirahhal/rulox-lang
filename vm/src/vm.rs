@@ -1,17 +1,15 @@
 use std::collections::HashMap;
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-
-use crate::{
-    chunk::Chunk,
-    common::{opcode_from_u8, OpCode},
-    debug,
-    utils::stack::Stack,
+use common::{
+    chunk::{opcode_from_u8, Chunk, OpCode},
     value::Value,
 };
 
+use crate::{debug, stack::Stack};
+
 const DEBUG_TRACE_EXECUTION: bool = false;
-const STACK_INITIAL_SIZE: usize = 256;
+pub const STACK_INITIAL_SIZE: usize = 256;
 
 pub enum RunResult {
     Ok,
@@ -27,19 +25,6 @@ pub struct VM<'a> {
     pub globals: HashMap<String, Value>,
 }
 
-pub fn run(chunk: &Chunk) -> RunResult {
-    let mut vm = VM {
-        chunk: &chunk,
-        ip: &chunk.code[0],
-        stack: Stack::new(Some(STACK_INITIAL_SIZE)),
-        globals: HashMap::new(),
-    };
-
-    let result = vm.run();
-
-    result
-}
-
 impl<'a> VM<'a> {
     // pub fn new() -> Self {
     //     VM {
@@ -51,7 +36,7 @@ impl<'a> VM<'a> {
     //     }
     // }
 
-    fn run(&mut self) -> RunResult {
+    pub fn run(&mut self) -> RunResult {
         loop {
             if DEBUG_TRACE_EXECUTION {
                 print!("    ");

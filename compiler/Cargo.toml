@@ -1,0 +1,11 @@
+[package]
+name = "compiler"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ali Rahhal <arahhal997@gmail.com>", "Mohammad Rahhal <m.r992@gmail.com>"]
+
+[dependencies]
+byteorder = "1.4.3"
+lazy_static = "1.4.0"
+maplit = "1.0.2"
+common = { path = "../common" }
