@@ -287,6 +287,7 @@ impl<'a> Scanner<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     pub struct TestSuite {
         source: String,
@@ -306,178 +307,55 @@ mod tests {
         );
     }
 
-    #[test]
-    fn scan_tokens() {
-        let test_suites: Vec<TestSuite> = vec![
-            TestSuite {
-                source: "{".to_string(),
-                wanted_token: TokenType::TokenLeftBrace,
-            },
-            TestSuite {
-                source: "}".to_string(),
-                wanted_token: TokenType::TokenRightBrace,
-            },
-            TestSuite {
-                source: "and".to_string(),
-                wanted_token: TokenType::TokenAnd,
-            },
-            TestSuite {
-                source: "class".to_string(),
-                wanted_token: TokenType::TokenClass,
-            },
-            TestSuite {
-                source: "!".to_string(),
-                wanted_token: TokenType::TokenBang,
-            },
-            TestSuite {
-                source: "!=".to_string(),
-                wanted_token: TokenType::TokenBangEqual,
-            },
-            TestSuite {
-                source: ",".to_string(),
-                wanted_token: TokenType::TokenComma,
-            },
-            TestSuite {
-                source: ".".to_string(),
-                wanted_token: TokenType::TokenDot,
-            },
-            TestSuite {
-                source: "else".to_string(),
-                wanted_token: TokenType::TokenElse,
-            },
-            TestSuite {
-                source: "".to_string(),
-                wanted_token: TokenType::TokenEof,
-            },
-            TestSuite {
-                source: "=".to_string(),
-                wanted_token: TokenType::TokenEqual,
-            },
-            TestSuite {
-                source: "==".to_string(),
-                wanted_token: TokenType::TokenEqualEqual,
-            },
-            TestSuite {
-                source: "false".to_string(),
-                wanted_token: TokenType::TokenFalse,
-            },
-            TestSuite {
-                source: "for".to_string(),
-                wanted_token: TokenType::TokenFor,
-            },
-            TestSuite {
-                source: "fun".to_string(),
-                wanted_token: TokenType::TokenFun,
-            },
-            TestSuite {
-                source: ">".to_string(),
-                wanted_token: TokenType::TokenGreater,
-            },
-            TestSuite {
-                source: ">=".to_string(),
-                wanted_token: TokenType::TokenGreaterEqual,
-            },
-            TestSuite {
-                source: "if".to_string(),
-                wanted_token: TokenType::TokenIf,
-            },
-            TestSuite {
-                source: "(".to_string(),
-                wanted_token: TokenType::TokenLeftParen,
-            },
-            TestSuite {
-                source: ")".to_string(),
-                wanted_token: TokenType::TokenRightParen,
-            },
-            TestSuite {
-                source: "<".to_string(),
-                wanted_token: TokenType::TokenLess,
-            },
-            TestSuite {
-                source: "<=".to_string(),
-                wanted_token: TokenType::TokenLessEqual,
-            },
-            TestSuite {
-                source: "-".to_string(),
-                wanted_token: TokenType::TokenMinus,
-            },
-            TestSuite {
-                source: "nil".to_string(),
-                wanted_token: TokenType::TokenNil,
-            },
-            TestSuite {
-                source: "123.1".to_string(),
-                wanted_token: TokenType::TokenNumber,
-            },
-            TestSuite {
-                source: "or".to_string(),
-                wanted_token: TokenType::TokenOr,
-            },
-            TestSuite {
-                source: "+".to_string(),
-                wanted_token: TokenType::TokenPlus,
-            },
-            TestSuite {
-                source: "print".to_string(),
-                wanted_token: TokenType::TokenPrint,
-            },
-            TestSuite {
-                source: "return".to_string(),
-                wanted_token: TokenType::TokenReturn,
-            },
-            TestSuite {
-                source: ";".to_string(),
-                wanted_token: TokenType::TokenSemicolon,
-            },
-            TestSuite {
-                source: "/".to_string(),
-                wanted_token: TokenType::TokenSlash,
-            },
-            TestSuite {
-                source: "*".to_string(),
-                wanted_token: TokenType::TokenStar,
-            },
-            TestSuite {
-                source: "super".to_string(),
-                wanted_token: TokenType::TokenSuper,
-            },
-            TestSuite {
-                source: "this".to_string(),
-                wanted_token: TokenType::TokenThis,
-            },
-            TestSuite {
-                source: "true".to_string(),
-                wanted_token: TokenType::TokenTrue,
-            },
-            TestSuite {
-                source: "var".to_string(),
-                wanted_token: TokenType::TokenVar,
-            },
-            TestSuite {
-                source: "while".to_string(),
-                wanted_token: TokenType::TokenWhile,
-            },
-            TestSuite {
-                source: "\"hellow world\"".to_string(),
-                wanted_token: TokenType::TokenString,
-            },
-            TestSuite {
-                source: "id".to_string(),
-                wanted_token: TokenType::TokenIdentifier,
-            },
-        ];
+    #[rstest]
+    #[case("{".to_string(), TokenType::TokenLeftBrace)]
+    #[case("}".to_string(), TokenType::TokenRightBrace)]
+    #[case("and".to_string(), TokenType::TokenAnd)]
+    #[case("class".to_string(), TokenType::TokenClass)]
+    #[case("!".to_string(), TokenType::TokenBang)]
+    #[case("!=".to_string(), TokenType::TokenBangEqual)]
+    #[case(",".to_string(), TokenType::TokenComma)]
+    #[case(".".to_string(), TokenType::TokenDot)]
+    #[case("else".to_string(), TokenType::TokenElse)]
+    #[case("".to_string(), TokenType::TokenEof)]
+    #[case("==".to_string(), TokenType::TokenEqualEqual)]
+    #[case("false".to_string(), TokenType::TokenFalse)]
+    #[case("for".to_string(), TokenType::TokenFor)]
+    #[case("fun".to_string(), TokenType::TokenFun)]
+    #[case(">".to_string(), TokenType::TokenGreater)]
+    #[case(">=".to_string(), TokenType::TokenGreaterEqual)]
+    #[case("if".to_string(), TokenType::TokenIf)]
+    #[case("(".to_string(), TokenType::TokenLeftParen)]
+    #[case(")".to_string(), TokenType::TokenRightParen)]
+    #[case("<".to_string(), TokenType::TokenLess)]
+    #[case("<=".to_string(), TokenType::TokenLessEqual)]
+    #[case("-".to_string(), TokenType::TokenMinus)]
+    #[case("nil".to_string(), TokenType::TokenNil)]
+    #[case("123.1".to_string(), TokenType::TokenNumber)]
+    #[case("or".to_string(), TokenType::TokenOr)]
+    #[case("+".to_string(), TokenType::TokenPlus)]
+    #[case("print".to_string(), TokenType::TokenPrint)]
+    #[case("return".to_string(), TokenType::TokenReturn)]
+    #[case(";".to_string(), TokenType::TokenSemicolon)]
+    #[case("/".to_string(), TokenType::TokenSlash)]
+    #[case("*".to_string(), TokenType::TokenStar)]
+    #[case("super".to_string(), TokenType::TokenSuper)]
+    #[case("this".to_string(), TokenType::TokenThis)]
+    #[case("true".to_string(), TokenType::TokenTrue)]
+    #[case("var".to_string(), TokenType::TokenVar)]
+    #[case("while".to_string(), TokenType::TokenWhile)]
+    #[case("\"hellow world\"".to_string(), TokenType::TokenString)]
+    #[case("id".to_string(), TokenType::TokenIdentifier)]
+    fn scan_tokens(#[case] input: String, #[case] expected_token: TokenType) {
 
-        let mut scanner: Scanner;
+        let mut scanner: Scanner = Scanner::new(&input);
 
-        for t in test_suites {
-            scanner = Scanner::new(&t.source);
-            let token = scanner.scan_token();
+        let token = scanner.scan_token();
 
-            assert_eq!(
-                token.token_type, t.wanted_token,
-                "Expected to scan {:?} token, got {:?}",
-                t.wanted_token, token.token_type
-            );
-        }
+        assert_eq!(
+            token.token_type, expected_token,
+            "Expected to scan {:?} token, got {:?}",
+            expected_token, token.token_type
+        );
     }
 }
