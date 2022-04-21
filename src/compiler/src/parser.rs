@@ -1,4 +1,4 @@
-use common::{chunk::{Chunk, OpCode}, value::Value};
+use common::{chunk::Chunk, value::Value, opcode::OpCode};
 use lazy_static::lazy_static;
 use maplit::hashmap;
 use std::collections::HashMap;

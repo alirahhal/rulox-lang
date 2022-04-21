@@ -6,4 +6,5 @@ authors = ["Ali Rahhal <arahhal997@gmail.com>", "Mohammad Rahhal <m.r992@gmail.c
 
 [dependencies]
 byteorder = "1.4.3"
+num_enum = "0.5.7"
 common = { path = "../common" }

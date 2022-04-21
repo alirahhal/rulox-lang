@@ -1,84 +1,7 @@
-use crate::value::{Value, ValueArray};
-
-#[derive(Debug, PartialEq)]
-pub enum OpCode {
-    OpReturn,
-    OpConstant,
-    OpConstantLong,
-    OpAdd,
-    OpSubtract,
-    OpMultiply,
-    OpDivide,
-    OpNegate,
-    OpNil,
-    OpTrue,
-    OpFalse,
-    OpNot,
-    OpEqual,
-    OpGreater,
-    OpLess,
-    OpPrint,
-    OpPop,
-    OpDefineGlobal,
-    OpDefineGlobalLong,
-    OpGetGlobal,
-    OpGetGlobalLong,
-    OpSetGlobal,
-    OpSetGlobalLong,
-    OpGetLocal,
-    OpGetLocalLong,
-    OpSetLocal,
-    OpSetLocalLong,
-    OpJumpIfFalse,
-    OpJump,
-    OpLoop,
-
-    Unknown,
-}
-
-impl Default for OpCode {
-    fn default() -> Self {
-        OpCode::Unknown
-    }
-}
-
-pub fn opcode_from_u8(n: u8) -> Option<OpCode> {
-    match n {
-        0 => Some(OpCode::OpReturn),
-        1 => Some(OpCode::OpConstant),
-        2 => Some(OpCode::OpConstantLong),
-        3 => Some(OpCode::OpAdd),
-        4 => Some(OpCode::OpSubtract),
-        5 => Some(OpCode::OpMultiply),
-        6 => Some(OpCode::OpDivide),
-        7 => Some(OpCode::OpNegate),
-        8 => Some(OpCode::OpNil),
-        9 => Some(OpCode::OpTrue),
-        10 => Some(OpCode::OpFalse),
-        11 => Some(OpCode::OpNot),
-        12 => Some(OpCode::OpEqual),
-        13 => Some(OpCode::OpGreater),
-        14 => Some(OpCode::OpLess),
-        15 => Some(OpCode::OpPrint),
-        16 => Some(OpCode::OpPop),
-        17 => Some(OpCode::OpDefineGlobal),
-        18 => Some(OpCode::OpDefineGlobalLong),
-        19 => Some(OpCode::OpGetGlobal),
-        20 => Some(OpCode::OpGetGlobalLong),
-        21 => Some(OpCode::OpSetGlobal),
-        22 => Some(OpCode::OpSetGlobalLong),
-        23 => Some(OpCode::OpGetLocal),
-        24 => Some(OpCode::OpGetLocalLong),
-        25 => Some(OpCode::OpSetLocal),
-        26 => Some(OpCode::OpSetLocalLong),
-        27 => Some(OpCode::OpJumpIfFalse),
-        28 => Some(OpCode::OpJump),
-        29 => Some(OpCode::OpLoop),
-
-        _ => None,
-    }
-}
-
+use crate::{
+    opcode::OpCode,
+    value::{Value, ValueArray},
+};
 
 #[derive(Default)]
 pub struct Chunk {
@@ -134,10 +57,10 @@ mod tests {
         chunk.write_constant(Value::Number(1), 1);
 
         assert_eq!(
-            opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
-            OpCode::OpConstant,
+            OpCode::try_from(chunk.code[chunk.code.len() - 2]),
+            Ok(OpCode::OpConstant),
             "Write constant did not emit a constant operation, found: `{:?}`",
-            opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
+            OpCode::try_from(chunk.code[chunk.code.len() - 2]),
         );
     }
 
@@ -178,19 +101,19 @@ mod tests {
         while i < 257 {
             chunk.write_constant(Value::Number(i), 1);
             assert_eq!(
-                opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap(),
-                OpCode::OpConstant,
+                OpCode::try_from(chunk.code[chunk.code.len() - 2]),
+                Ok(OpCode::OpConstant),
                 "Write constant did not emit a constant operation, found: `{:?}`",
-                opcode_from_u8(chunk.code[chunk.code.len() - 2]).unwrap()
+                OpCode::try_from(chunk.code[chunk.code.len() - 2]),
             );
             i = i + 1;
         }
 
         assert_eq!(
-            opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap(),
-            OpCode::OpConstantLong,
+            OpCode::try_from(chunk.code[chunk.code.len() - 4]),
+            Ok(OpCode::OpConstantLong),
             "Write constant did not emit a long constant operation, found: `{:?}`",
-            opcode_from_u8(chunk.code[chunk.code.len() - 4]).unwrap()
+            OpCode::try_from(chunk.code[chunk.code.len() - 4]),
         );
     }
 }

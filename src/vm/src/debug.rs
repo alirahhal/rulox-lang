@@ -1,6 +1,6 @@
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-use common::chunk::{Chunk, OpCode, opcode_from_u8};
+use common::{chunk::{Chunk}, opcode::{OpCode}};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("== {} ==", name);
@@ -20,7 +20,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
     }
 
     let instruction = chunk.code[offset as usize];
-    match opcode_from_u8(instruction).unwrap_or_default() {
+    match OpCode::try_from(instruction).unwrap() {
         OpCode::OpReturn => simple_instruction(String::from("OP_RETURN"), offset),
         OpCode::OpConstant => constant_instruction(String::from("OP_CONSTANT"), chunk, offset),
         OpCode::OpConstantLong => {
@@ -66,11 +66,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: i32) -> i32 {
         }
         OpCode::OpJump => jump_instruction(String::from("OP_JUMP"), 1, chunk, offset),
         OpCode::OpLoop => jump_instruction(String::from("OP_LOOP"), -1, chunk, offset),
-        OpCode::OpPop => simple_instruction(String::from("OP_POP"), offset),
-        _ => {
-            println!("Unknown opcode {:?}\n", instruction);
-            offset + 1
-        }
+        OpCode::OpPop => simple_instruction(String::from("OP_POP"), offset)
     }
 }
 

@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-use common::{
-    chunk::{opcode_from_u8, Chunk, OpCode},
-    value::Value,
-};
+use common::{chunk::Chunk, opcode::OpCode, value::Value};
 
 use crate::{debug, stack::Stack};
 
@@ -26,15 +23,14 @@ pub struct VM<'a> {
 }
 
 impl<'a> VM<'a> {
-    // pub fn new() -> Self {
-    //     VM {
-    //         chunk: &Chunk {
-    //             ..Default::default()
-    //         },
-    //         ip: &0,
-    //         stack: Stack::new(Some(STACK_INITIAL_SIZE)),
-    //     }
-    // }
+    pub fn new(chunk: &'a Chunk) -> Self {
+        VM {
+            chunk,
+            ip: &chunk.code[0],
+            stack: Stack::new(Some(STACK_INITIAL_SIZE)),
+            globals: HashMap::new(),
+        }
+    }
 
     pub fn run(&mut self) -> RunResult {
         loop {
@@ -48,7 +44,7 @@ impl<'a> VM<'a> {
 
             let instruction = self.read_byte();
 
-            match opcode_from_u8(instruction).unwrap() {
+            match OpCode::try_from(instruction).unwrap() {
                 OpCode::OpConstant => {
                     let constant = self.read_constant();
                     self.stack.push(constant);
@@ -235,7 +231,6 @@ impl<'a> VM<'a> {
                     // Exit interpreter.
                     return RunResult::Ok;
                 }
-                _ => panic!("Unknown opcode {:?}\n", instruction),
             }
         }
     }

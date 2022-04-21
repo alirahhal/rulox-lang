@@ -289,11 +289,6 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
-    pub struct TestSuite {
-        source: String,
-        wanted_token: TokenType,
-    }
-
     #[test]
     fn skip_whitespaces() {
         let source = " \r\t {".to_string();

@@ -1,0 +1,36 @@
+use num_enum::TryFromPrimitive;
+
+#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
+#[repr(u8)]
+pub enum OpCode {
+    OpReturn,
+    OpConstant,
+    OpConstantLong,
+    OpAdd,
+    OpSubtract,
+    OpMultiply,
+    OpDivide,
+    OpNegate,
+    OpNil,
+    OpTrue,
+    OpFalse,
+    OpNot,
+    OpEqual,
+    OpGreater,
+    OpLess,
+    OpPrint,
+    OpPop,
+    OpDefineGlobal,
+    OpDefineGlobalLong,
+    OpGetGlobal,
+    OpGetGlobalLong,
+    OpSetGlobal,
+    OpSetGlobalLong,
+    OpGetLocal,
+    OpGetLocalLong,
+    OpSetLocal,
+    OpSetLocalLong,
+    OpJumpIfFalse,
+    OpJump,
+    OpLoop,
+}
