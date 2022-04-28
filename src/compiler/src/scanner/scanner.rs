@@ -1,85 +1,10 @@
-use std::{iter::Peekable, str::Chars};
-
 use super::token::{Token, TokenType};
 
 pub struct Scanner<'a> {
-    source: &'a str,
-    start: i32,
-    current: i32,
-    line: i32,
-
-    source_iter: Peekable<Chars<'a>>,
-}
-
-impl Iterator for Scanner<'_> {
-    type Item = Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.skip_whitespace();
-        self.start = self.current;
-
-        match self.peek() {
-            Some(_) => {}
-            None => return Some(self.make_token(TokenType::TokenEof)),
-        };
-
-        let c = self.advance().unwrap();
-
-        if c.is_alphabetic() {
-            return Some(self.identifier());
-        }
-        if c.is_digit(10) {
-            return Some(self.number());
-        }
-
-        match c {
-            '(' => Some(self.make_token(TokenType::TokenLeftParen)),
-            ')' => Some(self.make_token(TokenType::TokenRightParen)),
-            '{' => Some(self.make_token(TokenType::TokenLeftBrace)),
-            '}' => Some(self.make_token(TokenType::TokenRightBrace)),
-            ';' => Some(self.make_token(TokenType::TokenSemicolon)),
-            ',' => Some(self.make_token(TokenType::TokenComma)),
-            '.' => Some(self.make_token(TokenType::TokenDot)),
-            '-' => Some(self.make_token(TokenType::TokenMinus)),
-            '+' => Some(self.make_token(TokenType::TokenPlus)),
-            '/' => Some(self.make_token(TokenType::TokenSlash)),
-            '*' => Some(self.make_token(TokenType::TokenStar)),
-            '!' => {
-                let token_type = if self.match_token('=') {
-                    TokenType::TokenBangEqual
-                } else {
-                    TokenType::TokenBang
-                };
-                Some(self.make_token(token_type))
-            }
-            '=' => {
-                let token_type = if self.match_token('=') {
-                    TokenType::TokenEqualEqual
-                } else {
-                    TokenType::TokenEqual
-                };
-                Some(self.make_token(token_type))
-            }
-            '<' => {
-                let token_type = if self.match_token('=') {
-                    TokenType::TokenLessEqual
-                } else {
-                    TokenType::TokenLess
-                };
-                Some(self.make_token(token_type))
-            }
-            '>' => {
-                let token_type = if self.match_token('=') {
-                    TokenType::TokenGreaterEqual
-                } else {
-                    TokenType::TokenGreater
-                };
-                Some(self.make_token(token_type))
-            }
-            '"' => Some(self.string()),
-            _ => Some(self.error_token("Unexpected character.".to_string())),
-        }
-    }
+    pub source: &'a str,
+    pub start: i32,
+    pub current: i32,
+    pub line: i32,
 }
 
 impl<'a> Scanner<'a> {
@@ -89,31 +14,98 @@ impl<'a> Scanner<'a> {
             start: 0,
             current: 0,
             line: 1,
-
-            source_iter: source.chars().into_iter().peekable(),
         }
     }
 
-    fn advance(&mut self) -> Option<char> {
+    pub fn scan_token(&mut self) -> Token {
+        self.skip_whitespace();
+        self.start = self.current;
+
+        if self.is_at_end() {
+            return self.make_token(TokenType::TokenEof);
+        }
+
+        let c = self.advance();
+
+        if c.is_alphabetic() {
+            return self.identifier();
+        }
+        if c.is_digit(10) {
+            return self.number();
+        }
+
+        match c {
+            '(' => self.make_token(TokenType::TokenLeftParen),
+            ')' => self.make_token(TokenType::TokenRightParen),
+            '{' => self.make_token(TokenType::TokenLeftBrace),
+            '}' => self.make_token(TokenType::TokenRightBrace),
+            ';' => self.make_token(TokenType::TokenSemicolon),
+            ',' => self.make_token(TokenType::TokenComma),
+            '.' => self.make_token(TokenType::TokenDot),
+            '-' => self.make_token(TokenType::TokenMinus),
+            '+' => self.make_token(TokenType::TokenPlus),
+            '/' => self.make_token(TokenType::TokenSlash),
+            '*' => self.make_token(TokenType::TokenStar),
+            '!' => {
+                let token_type = if self.match_token('=') {
+                    TokenType::TokenBangEqual
+                } else {
+                    TokenType::TokenBang
+                };
+                self.make_token(token_type)
+            }
+            '=' => {
+                let token_type = if self.match_token('=') {
+                    TokenType::TokenEqualEqual
+                } else {
+                    TokenType::TokenEqual
+                };
+                self.make_token(token_type)
+            }
+            '<' => {
+                let token_type = if self.match_token('=') {
+                    TokenType::TokenLessEqual
+                } else {
+                    TokenType::TokenLess
+                };
+                self.make_token(token_type)
+            }
+            '>' => {
+                let token_type = if self.match_token('=') {
+                    TokenType::TokenGreaterEqual
+                } else {
+                    TokenType::TokenGreater
+                };
+                self.make_token(token_type)
+            }
+            '"' => self.string(),
+            _ => self.error_token("Unexpected character.".to_string()),
+        }
+    }
+
+    fn advance(&mut self) -> char {
         self.current += 1;
-        self.source_iter.next()
+        self.source
+            .chars()
+            .nth((self.current - 1) as usize)
+            .unwrap()
     }
 
     fn skip_whitespace(&mut self) {
         loop {
             let c = self.peek();
             match c {
-                Some(' ') | Some('\r') | Some('\t') => {
+                ' ' | '\r' | '\t' => {
                     self.advance();
                 }
-                Some('\n') => {
+                '\n' => {
                     self.line += 1;
                     self.advance();
                 }
-                Some('/') => {
-                    if self.peek_next() == Some('/') {
+                '/' => {
+                    if self.peek_next() == '/' {
                         // A comment goes until the end of the line.
-                        while self.peek() != Some('\n') && self.peek() != None {
+                        while self.peek() != '\n' && !self.is_at_end() {
                             self.advance();
                         }
                     } else {
@@ -196,9 +188,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn identifier(&mut self) -> Token {
-        while self.peek().unwrap_or('\0').is_alphabetic()
-            || self.peek().unwrap_or('\0').is_digit(10)
-        {
+        while self.peek().is_alphabetic() || self.peek().is_digit(10) {
             self.advance();
         }
 
@@ -206,34 +196,35 @@ impl<'a> Scanner<'a> {
         self.make_token(id)
     }
 
-    fn peek(&mut self) -> Option<char> {
-        self.source_iter.peek().cloned()
-    }
-
-    fn peek_next(&mut self) -> Option<char> {
-        if self.current + 1 >= self.source.chars().count() as i32 {
-            return None;
+    fn peek(&mut self) -> char {
+        if self.is_at_end() {
+            return '\0';
         }
 
-        return self.source.chars().nth((self.current + 1) as usize);
-        // let res: Option<char> = match self.source_iter.next() {
-        //     Some(_) => self.source_iter.peek().cloned(),
-        //     _ => None,
-        // };
+        return self.source.chars().nth((self.current) as usize).unwrap();
+    }
 
-        // self.source_iter.ba
-        // res
+    fn peek_next(&mut self) -> char {
+        if self.current + 1 >= self.source.chars().count() as i32 {
+            return '\0';
+        }
+
+        return self
+            .source
+            .chars()
+            .nth((self.current + 1) as usize)
+            .unwrap();
     }
 
     fn string(&mut self) -> Token {
-        while self.peek() != Some('"') && self.peek() != None {
-            if self.peek() == Some('\n') {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
                 self.line += 1;
             }
             self.advance();
         }
 
-        if self.peek() == None {
+        if self.is_at_end() {
             return self.error_token("Unterminated string.".to_string());
         }
 
@@ -243,33 +234,37 @@ impl<'a> Scanner<'a> {
     }
 
     fn match_token(&mut self, expected: char) -> bool {
-        if self.source_iter.peek() == None {
+        if self.is_at_end() {
             return false;
         }
-        if self.peek().unwrap_or('\0') != expected {
+        if self.source.chars().nth((self.current) as usize).unwrap() != expected {
             return false;
         }
 
-        self.advance();
+        self.current += 1;
         true
     }
 
     fn number(&mut self) -> Token {
-        while self.peek().unwrap_or('\0').is_digit(10) {
+        while self.peek().is_digit(10) {
             self.advance();
         }
 
         // Look for a fractional part.
-        if self.peek() == Some('.') && self.peek_next().unwrap_or('\0').is_digit(10) {
+        if self.peek() == '.' && self.peek_next().is_digit(10) {
             // Consume the ".".
             self.advance();
 
-            while self.peek().unwrap_or('\0').is_digit(10) {
+            while self.peek().is_digit(10) {
                 self.advance();
             }
         }
 
         self.make_token(TokenType::TokenNumber)
+    }
+
+    fn is_at_end(&mut self) -> bool {
+        self.current >= self.source.chars().count() as i32
     }
 
     fn make_token(&mut self, token_type: TokenType) -> Token {
@@ -299,7 +294,7 @@ mod tests {
         let source = " \r\t {".to_string();
         let mut scanner = Scanner::new(&source);
 
-        let t = scanner.next().unwrap();
+        let t = scanner.scan_token();
         assert_eq!(
             t.token_type,
             TokenType::TokenLeftBrace,
@@ -347,9 +342,10 @@ mod tests {
     #[case("\"hellow world\"".to_string(), TokenType::TokenString)]
     #[case("id".to_string(), TokenType::TokenIdentifier)]
     fn scan_tokens(#[case] input: String, #[case] expected_token: TokenType) {
+
         let mut scanner: Scanner = Scanner::new(&input);
 
-        let token = scanner.next().unwrap();
+        let token = scanner.scan_token();
 
         assert_eq!(
             token.token_type, expected_token,

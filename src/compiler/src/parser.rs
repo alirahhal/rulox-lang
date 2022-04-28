@@ -282,7 +282,7 @@ impl<'a> Parser<'a> {
         self.previous = self.current.clone();
 
         loop {
-            self.current = self.scanner.next().unwrap();
+            self.current = self.scanner.scan_token();
             if self.current.token_type != TokenType::TokenError {
                 break;
             }
