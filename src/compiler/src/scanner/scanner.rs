@@ -7,52 +7,45 @@ pub struct Scanner<'a> {
     pub line: i32,
 }
 
-impl<'a> Scanner<'a> {
-    pub fn new(source: &'a str) -> Self {
-        Scanner {
-            source,
-            start: 0,
-            current: 0,
-            line: 1,
-        }
-    }
+impl Iterator for Scanner<'_> {
+    type Item = Token;
 
-    pub fn scan_token(&mut self) -> Token {
+    fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace();
         self.start = self.current;
 
         if self.is_at_end() {
-            return self.make_token(TokenType::TokenEof);
+            return Some(self.make_token(TokenType::TokenEof));
         }
 
         let c = self.advance();
 
         if c.is_alphabetic() {
-            return self.identifier();
+            return Some(self.identifier());
         }
         if c.is_digit(10) {
-            return self.number();
+            return Some(self.number());
         }
 
         match c {
-            '(' => self.make_token(TokenType::TokenLeftParen),
-            ')' => self.make_token(TokenType::TokenRightParen),
-            '{' => self.make_token(TokenType::TokenLeftBrace),
-            '}' => self.make_token(TokenType::TokenRightBrace),
-            ';' => self.make_token(TokenType::TokenSemicolon),
-            ',' => self.make_token(TokenType::TokenComma),
-            '.' => self.make_token(TokenType::TokenDot),
-            '-' => self.make_token(TokenType::TokenMinus),
-            '+' => self.make_token(TokenType::TokenPlus),
-            '/' => self.make_token(TokenType::TokenSlash),
-            '*' => self.make_token(TokenType::TokenStar),
+            '(' => Some(self.make_token(TokenType::TokenLeftParen)),
+            ')' => Some(self.make_token(TokenType::TokenRightParen)),
+            '{' => Some(self.make_token(TokenType::TokenLeftBrace)),
+            '}' => Some(self.make_token(TokenType::TokenRightBrace)),
+            ';' => Some(self.make_token(TokenType::TokenSemicolon)),
+            ',' => Some(self.make_token(TokenType::TokenComma)),
+            '.' => Some(self.make_token(TokenType::TokenDot)),
+            '-' => Some(self.make_token(TokenType::TokenMinus)),
+            '+' => Some(self.make_token(TokenType::TokenPlus)),
+            '/' => Some(self.make_token(TokenType::TokenSlash)),
+            '*' => Some(self.make_token(TokenType::TokenStar)),
             '!' => {
                 let token_type = if self.match_token('=') {
                     TokenType::TokenBangEqual
                 } else {
                     TokenType::TokenBang
                 };
-                self.make_token(token_type)
+                Some(self.make_token(token_type))
             }
             '=' => {
                 let token_type = if self.match_token('=') {
@@ -60,7 +53,7 @@ impl<'a> Scanner<'a> {
                 } else {
                     TokenType::TokenEqual
                 };
-                self.make_token(token_type)
+                Some(self.make_token(token_type))
             }
             '<' => {
                 let token_type = if self.match_token('=') {
@@ -68,7 +61,7 @@ impl<'a> Scanner<'a> {
                 } else {
                     TokenType::TokenLess
                 };
-                self.make_token(token_type)
+                Some(self.make_token(token_type))
             }
             '>' => {
                 let token_type = if self.match_token('=') {
@@ -76,10 +69,21 @@ impl<'a> Scanner<'a> {
                 } else {
                     TokenType::TokenGreater
                 };
-                self.make_token(token_type)
+                Some(self.make_token(token_type))
             }
-            '"' => self.string(),
-            _ => self.error_token("Unexpected character.".to_string()),
+            '"' => Some(self.string()),
+            _ => Some(self.error_token("Unexpected character.".to_string())),
+        }
+    }
+}
+
+impl<'a> Scanner<'a> {
+    pub fn new(source: &'a str) -> Self {
+        Scanner {
+            source,
+            start: 0,
+            current: 0,
+            line: 1,
         }
     }
 
@@ -294,7 +298,7 @@ mod tests {
         let source = " \r\t {".to_string();
         let mut scanner = Scanner::new(&source);
 
-        let t = scanner.scan_token();
+        let t = scanner.next().unwrap();
         assert_eq!(
             t.token_type,
             TokenType::TokenLeftBrace,
@@ -345,7 +349,7 @@ mod tests {
 
         let mut scanner: Scanner = Scanner::new(&input);
 
-        let token = scanner.scan_token();
+        let token = scanner.next().unwrap();
 
         assert_eq!(
             token.token_type, expected_token,
