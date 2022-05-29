@@ -14,43 +14,39 @@ pub enum RunResult {
     RuntimeError, // Unknown,
 }
 
-pub struct VM<'a> {
-    pub chunk: &'a Chunk,
-    pub ip: &'a u8,
-
+pub struct VM {
     pub stack: Stack,
     pub globals: HashMap<String, Value>,
 }
 
-impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
+impl VM {
+    pub fn new() -> Self {
         VM {
-            chunk,
-            ip: &chunk.code[0],
             stack: Stack::new(Some(STACK_INITIAL_SIZE)),
             globals: HashMap::new(),
         }
     }
 
-    pub fn run(&mut self) -> RunResult {
+    pub fn run(&mut self, chunk: &Chunk) -> RunResult {
+        let mut ip = &chunk.code[0];
         loop {
             if DEBUG_TRACE_EXECUTION {
                 print!("    ");
                 self.stack.print_stack();
-                debug::disassemble_instruction(self.chunk, unsafe {
-                    (self.ip as *const u8).offset_from((&self.chunk.code[0]) as *const u8) as i32
+                debug::disassemble_instruction(chunk, unsafe {
+                    (ip as *const u8).offset_from((&chunk.code[0]) as *const u8) as i32
                 });
             }
 
-            let instruction = self.read_byte();
+            let instruction = self.read_byte(&mut ip);
 
             match OpCode::try_from(instruction).unwrap() {
                 OpCode::OpConstant => {
-                    let constant = self.read_constant();
+                    let constant = self.read_constant(&mut ip, chunk);
                     self.stack.push(constant);
                 }
                 OpCode::OpConstantLong => {
-                    let constant = self.read_long_constant();
+                    let constant = self.read_long_constant(&mut ip, chunk);
                     self.stack.push(constant);
                 }
                 OpCode::OpNil => {
@@ -66,23 +62,23 @@ impl<'a> VM<'a> {
                     self.stack.pop();
                 }
                 OpCode::OpGetLocal => {
-                    let slot = self.read_byte();
+                    let slot = self.read_byte(&mut ip);
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 }
                 OpCode::OpGetLocalLong => {
-                    let slot = self.read_long();
+                    let slot = self.read_long(&mut ip);
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 }
                 OpCode::OpSetLocal => {
-                    let slot = self.read_byte();
+                    let slot = self.read_byte(&mut ip);
                     self.stack.set_at(slot as usize, self.peek(0).clone());
                 }
                 OpCode::OpSetLocalLong => {
-                    let slot = self.read_long();
+                    let slot = self.read_long(&mut ip);
                     self.stack.push(self.stack.get_at(slot as usize).clone());
                 }
                 OpCode::OpGetGlobal => {
-                    let v = self.read_constant();
+                    let v = self.read_constant(&mut ip, chunk);
                     let name = v.as_string();
                     let value = match self.globals.get(name) {
                         Some(v) => v,
@@ -95,7 +91,7 @@ impl<'a> VM<'a> {
                     self.stack.push(value.clone());
                 }
                 OpCode::OpGetGlobalLong => {
-                    let v = self.read_long_constant();
+                    let v = self.read_long_constant(&mut ip, chunk);
                     let name = v.as_string();
                     let value = match self.globals.get(name) {
                         Some(val) => val,
@@ -108,21 +104,21 @@ impl<'a> VM<'a> {
                     self.stack.push(value.clone());
                 }
                 OpCode::OpDefineGlobal => {
-                    let v = self.read_constant();
+                    let v = self.read_constant(&mut ip, chunk);
                     let name = v.as_string().to_owned();
                     self.globals.insert(name, self.peek(0).clone());
 
                     self.stack.pop();
                 }
                 OpCode::OpDefineGlobalLong => {
-                    let v = self.read_long_constant();
+                    let v = self.read_long_constant(&mut ip, chunk);
                     let name = v.as_string().to_owned();
                     self.globals.insert(name, self.peek(0).clone());
 
                     self.stack.pop();
                 }
                 OpCode::OpSetGlobal => {
-                    let name = self.read_constant().as_string().to_owned();
+                    let name = self.read_constant(&mut ip, chunk).as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
                         return RunResult::RuntimeError;
@@ -131,7 +127,7 @@ impl<'a> VM<'a> {
                     self.globals.insert(name, self.peek(0).clone());
                 }
                 OpCode::OpSetGlobalLong => {
-                    let name = self.read_long_constant().as_string().to_owned();
+                    let name = self.read_long_constant(&mut ip, chunk).as_string().to_owned();
                     if !self.globals.contains_key(&name) {
                         self.runtime_error(format!("Undefined variable '{}'.", name));
                         return RunResult::RuntimeError;
@@ -211,21 +207,21 @@ impl<'a> VM<'a> {
                     println!();
                 }
                 OpCode::OpJumpIfFalse => {
-                    let offset = self.read_short();
+                    let offset = self.read_short(&mut ip);
                     if self.peek(0).is_falsey() {
-                        let ptr = self.ip as *const u8;
-                        self.ip = unsafe { ptr.offset(offset as isize).as_ref().unwrap() };
+                        let ptr = ip as *const u8;
+                        ip = unsafe { &mut ptr.offset(offset as isize).as_ref().unwrap() };
                     }
                 }
                 OpCode::OpJump => {
-                    let offset = self.read_short();
-                    let ptr = self.ip as *const u8;
-                    self.ip = unsafe { ptr.offset(offset as isize).as_ref().unwrap() };
+                    let offset = self.read_short(&mut ip);
+                    let ptr = ip as *const u8;
+                    ip = unsafe { ptr.offset(offset as isize).as_ref().unwrap() };
                 }
                 OpCode::OpLoop => {
-                    let offset = self.read_short();
-                    let ptr = self.ip as *const u8;
-                    self.ip = unsafe { ptr.offset(-(offset as isize)).as_ref().unwrap() };
+                    let offset = self.read_short(&mut ip);
+                    let ptr = ip as *const u8;
+                    ip = unsafe { ptr.offset(-(offset as isize)).as_ref().unwrap() };
                 }
                 OpCode::OpReturn => {
                     // Exit interpreter.
@@ -267,45 +263,45 @@ impl<'a> VM<'a> {
         println!("{}", message);
     }
 
-    fn read_byte(&mut self) -> u8 {
-        unsafe { self.read_byte_unsafe() }
+    fn read_byte(&mut self, ip: &mut &u8) -> u8 {
+        unsafe { self.read_byte_unsafe(ip) }
     }
 
-    unsafe fn read_byte_unsafe(&mut self) -> u8 {
-        let current_byte = *self.ip;
+    unsafe fn read_byte_unsafe(&mut self, ip: &mut &u8) -> u8 {
+        let current_byte = *ip;
 
-        let ptr = self.ip as *const u8;
-        self.ip = ptr.offset(1).as_ref().unwrap();
+        let ptr = *ip as *const u8;
+        *ip = &*ptr.offset(1).as_ref().unwrap();
 
-        current_byte
+        *current_byte
     }
 
-    fn read_short(&mut self) -> u16 {
+    fn read_short(&mut self, ip: &mut &u8) -> u16 {
         let mut buf = [0_u8; 4];
         for i in 0..2 {
-            buf[i] = self.read_byte();
+            buf[i] = self.read_byte(ip);
         }
         BigEndian::read_u16(&buf)
     }
 
-    fn read_long(&mut self) -> u32 {
+    fn read_long(&mut self, ip: &mut &u8) -> u32 {
         let mut buf = [0_u8; 4];
         for i in 0..3 {
-            buf[i] = self.read_byte();
+            buf[i] = self.read_byte(ip);
         }
         LittleEndian::read_u32(&buf)
     }
 
-    fn read_constant(&mut self) -> Value {
-        self.chunk.constants.values[self.read_byte() as usize].clone()
+    fn read_constant(&mut self, ip: &mut &u8, chunk: &Chunk) -> Value {
+        chunk.constants.values[self.read_byte(ip) as usize].clone()
     }
 
-    fn read_long_constant(&mut self) -> Value {
+    fn read_long_constant(&mut self, ip: &mut &u8, chunk: &Chunk) -> Value {
         let mut buf = [0_u8; 4];
         for i in 0..3 {
-            buf[i] = self.read_byte();
+            buf[i] = self.read_byte(ip);
         }
         let constant_address = LittleEndian::read_u32(&buf);
-        self.chunk.constants.values[constant_address as usize].clone()
+        chunk.constants.values[constant_address as usize].clone()
     }
 }

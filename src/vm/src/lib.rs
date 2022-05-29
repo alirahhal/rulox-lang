@@ -10,9 +10,9 @@ pub use vm::RunResult as InterpretResult;
 pub use vm::VM as VM;
 
 pub fn run(chunk: &Chunk) -> RunResult {
-    let mut vm = vm::VM::new(chunk);
+    let mut vm = vm::VM::new();
 
-    let result = vm.run();
+    let result = vm.run(chunk);
 
     result
 }

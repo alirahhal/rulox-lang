@@ -1,17 +1,18 @@
 use std::{
     env, fs,
+    io::{self, Write},
     process,
 };
 
-use vm::InterpretResult;
+use vm::{debug, InterpretResult, VM};
 
 fn main() {
     let args: Vec<_> = env::args().collect();
 
-    // let vm = vm::VM::new();
+    let mut vm = vm::VM::new();
 
     if args.len() == 1 {
-        // repl();
+        repl(&mut vm);
     } else if args.len() == 2 {
         run_file(&args[1]);
     } else {
@@ -38,26 +39,32 @@ fn run_file(path: &str) {
     }
 }
 
-// fn repl() {
-//     let mut line = String::new();
+fn repl(vm: &mut VM) {
+    let mut line = String::new();
 
-//     loop {
-//         print!("> ");
-//         io::stdout().flush().unwrap();
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
 
-//         if io::stdin().read_line(&mut line).unwrap_or(0) == 0 {
-//             println!();
-//             break;
-//         }
+        if io::stdin().read_line(&mut line).unwrap_or(0) == 0 {
+            println!();
+            break;
+        }
 
-//         let chunk = compiler::compile(&line);
-//         if let Err(_) = chunk {
-//             println!("Failed");
-//             return;
-//         }
+        let chunk = compiler::compile(&line);
+        if let Err(_) = chunk {
+            println!("Failed");
+            return;
+        }
 
-//         let result = vm::run(&chunk.unwrap());
+        let result = vm.run(&chunk.unwrap());
 
-//         line.clear();
-//     }
-// }
+        match result {
+            InterpretResult::CompileError => process::exit(65),
+            InterpretResult::RuntimeError => process::exit(70),
+            _ => (),
+        }
+
+        line.clear();
+    }
+}
