@@ -4,15 +4,13 @@ use std::{
     process,
 };
 
-use vm::{debug, InterpretResult, VM};
+use vm::{InterpretResult};
 
 fn main() {
     let args: Vec<_> = env::args().collect();
 
-    let mut vm = vm::VM::new();
-
     if args.len() == 1 {
-        repl(&mut vm);
+        repl();
     } else if args.len() == 2 {
         run_file(&args[1]);
     } else {
@@ -39,8 +37,9 @@ fn run_file(path: &str) {
     }
 }
 
-fn repl(vm: &mut VM) {
+fn repl() {
     let mut line = String::new();
+    let mut vm = vm::VM::new();
 
     loop {
         print!("> ");
